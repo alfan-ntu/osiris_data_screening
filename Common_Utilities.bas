@@ -2,10 +2,11 @@ Attribute VB_Name = "Common_Utilities"
 '
 '   Description: A group of funtion utilities or gadgets common to all Excel workbooks
 '
-'   Date: 2024/4/11
+'   Date: 2024/4/12
 '   Author: maoyi.fan@yapro.com.tw
-'   Ver.: 0.1a
+'   Ver.: 0.1b
 '   Revision History:
+'       - 2024/4/12, 0.1b: Add NCP support by abstracting the data search and display by PLI
 '       - 2024/4/11, 0.1a: initial version
 '
 '   Function List:
@@ -34,114 +35,90 @@ Public Const WORKSHEET_VISIBLE_COLUMN   As String = "C"
 '
 Public Const OM_DETAILS_SHEET           As String = "Benchmark 1"
 Public Const NCP_DETAILS_SHEET          As String = "Benchmark 4"
-
+Public Const CONST_OM_PLI               As String = "Operating Margin"
+Public Const CONST_NCP_PLI              As String = "Net Cost Plus"
 
 Public newlyCreated As Boolean
 
 '
-' Description: Display the Net Cost Plus financial data of the selected company
+' Description: Display the Net Cost Plus(NCP) financial data of the selected company
 ' Keyboard Shortcut: (Ctrl-Shift-N)
 ' Code Date: 2024/4/12
 '
 Sub CompanyNCPDetails()
-    Dim companyName, displayMessage, Response As String
-    Dim targetWorksheet As Worksheet
-    Dim targetWorksheetName As String
-    Dim NCP_Title, NCPMinus1_Title, NCPMinus2_Title As String
-    Dim NCP_average, NCP, OM_minus_1, OM_minus_2 As String
-    Dim selectedRange, tempRange As Range
-    Dim lRow, targetRow, r As Long
-    
-    companyName = ActiveCell.Value
-    targetWorksheetName = "Benchmark 1"
-    Set targetWorksheet = Worksheets(targetWorksheetName)
-    OM_minus_1 = targetWorksheet.Range("D13").Value
-    Set selectedRange = targetWorksheet.Range("B15")
-    
-    OM_Title = CStr(targetWorksheet.Cells(4, "E").Value)
-    OM_Title = CleanMessyString(OM_Title)
-    OMMinus1_Title = targetWorksheet.Cells(4, "F").Value
-    OMMinus1_Title = CleanMessyString(OMMinus1_Title)
-    OMMinus2_Title = targetWorksheet.Cells(4, "H").Value
-    OMMinus2_Title = CleanMessyString(OMMinus2_Title)
-    lRow = selectedRange.End(xlDown).Row
-    For r = 1 To lRow
-        Set tempRange = targetWorksheet.Cells(r, "B")
-        If companyName = tempRange.Value Then
-            OM_average = Format(targetWorksheet.Cells(r, "D").Value, "##0.00")
-            OM = Format(targetWorksheet.Cells(r, "E").Value, "##0.00")
-            OM_minus_1 = Format(targetWorksheet.Cells(r, "F").Value, "##0.00")
-            OM_minus_2 = Format(targetWorksheet.Cells(r, "H").Value, "##0.00")
-            Exit For
-        End If
-    Next r
-    '
-    ' Populate data to the UserForm
-    '
-    PLIDetailsForm.tbCompanyName.Value = companyName
-    PLIDetailsForm.fyLabel.Value = OM_Title
-    PLIDetailsForm.fyminus1Label.Value = OMMinus1_Title
-    PLIDetailsForm.fyMinus2Label.Value = OMMinus2_Title
-    PLIDetailsForm.tbOMAverage.Value = OM_average
-    PLIDetailsForm.tbOM.Value = OM
-    PLIDetailsForm.tbOMMinus1.Value = OM_minus_1
-    PLIDetailsForm.tbOMMinus2.Value = OM_minus_2
-    ' Display the UserForm
-    PLIDetailsForm.Show
-    
+    CompanyPLIDetails (CONST_NCP_PLI)
 End Sub
 
 '
-' Description: Display the Operating Margin financial data of the selected company
+' Description: Display the Operating Margin(OM) financial data of the selected company
 ' Keyboard Shortcut: (Ctrl-Shift-O)
 ' Code Date: 2024/4/11
 '
 Sub CompanyOMDetails()
-Attribute CompanyOMDetails.VB_ProcData.VB_Invoke_Func = "O\n14"
-    Dim companyName, PLIString As String
-    Dim targetWorksheet As Worksheet
+    CompanyPLIDetails (CONST_OM_PLI)
+End Sub
+
+'
+' Description: The actual function body handling PLI data fetch and data display
+' Code Date: 2024/4/12
+'
+Sub CompanyPLIDetails(PLI_Switch As String)
+Attribute CompanyPLIDetails.VB_ProcData.VB_Invoke_Func = "O\n14"
+    Dim companyName, companyIdx, PLIString As String
+    Dim tgtWs As Worksheet
     Dim targetWorksheetName As String
-    Dim OM_Title, OMMinus1_Title, OMMinus2_Title As String
-    Dim OM_average, OM, OM_minus_1, OM_minus_2 As String
+    Dim PLI_Title, PLIMinus1_Title, PLIMinus2_Title As String
+    Dim PLI_average, PLI, PLI_minus_1, PLI_minus_2 As String
     Dim selectedRange, tempRange As Range
-    Dim lRow, targetRow, r As Long
+    Dim lRow, r As Long
     
-    companyName = ActiveCell.Value
-    targetWorksheetName = "Benchmark 1"
-    PLIString = "營業淨利率"
+    ' Get the company name of the current row
+    companyName = ActiveSheet.Cells(ActiveCell.Row, "B").Value
+    Debug.Print "Company name: " & companyName
     
-    Set targetWorksheet = Worksheets(targetWorksheetName)
-    Set selectedRange = targetWorksheet.Range("B15")
+    If PLI_Switch = CONST_OM_PLI Then
+        targetWorksheetName = OM_DETAILS_SHEET
+        PLIString = "營業淨利率"
+    ElseIf PLI_Switch = CONST_NCP_PLI Then
+        targetWorksheetName = NCP_DETAILS_SHEET
+        PLIString = "成本及營業費用淨利率"
+    End If
     
-    OM_Title = CStr(targetWorksheet.Cells(4, "E").Value)
-    OM_Title = CleanMessyString(OM_Title)
-    OMMinus1_Title = targetWorksheet.Cells(4, "F").Value
-    OMMinus1_Title = CleanMessyString(OMMinus1_Title)
-    OMMinus2_Title = targetWorksheet.Cells(4, "H").Value
-    OMMinus2_Title = CleanMessyString(OMMinus2_Title)
+    Set tgtWs = Worksheets(targetWorksheetName)
+    Set selectedRange = tgtWs.Range("B15")
+    
+    PLI_Title = CStr(tgtWs.Cells(4, "E").Value)
+    PLI_Title = CleanMessyString(PLI_Title)
+    PLIMinus1_Title = tgtWs.Cells(4, "F").Value
+    PLIMinus1_Title = CleanMessyString(PLIMinus1_Title)
+    PLIMinus2_Title = tgtWs.Cells(4, "H").Value
+    PLIMinus2_Title = CleanMessyString(PLIMinus2_Title)
+    ' Locate the final row of the company list
     lRow = selectedRange.End(xlDown).Row
     For r = 1 To lRow
-        Set tempRange = targetWorksheet.Cells(r, "B")
+        Set tempRange = tgtWs.Cells(r, "B")
         If companyName = tempRange.Value Then
-            OM_average = Format(targetWorksheet.Cells(r, "D").Value, "##0.00")
-            OM = Format(targetWorksheet.Cells(r, "E").Value, "##0.00")
-            OM_minus_1 = Format(targetWorksheet.Cells(r, "F").Value, "##0.00")
-            OM_minus_2 = Format(targetWorksheet.Cells(r, "H").Value, "##0.00")
+            companyIdx = tgtWs.Cells(r, "A").Value
+            PLI_average = Format(tgtWs.Cells(r, "D").Value, "##0.00")
+            PLI = Format(tgtWs.Cells(r, "E").Value, "##0.00")
+            PLI_minus_1 = Format(tgtWs.Cells(r, "F").Value, "##0.00")
+            PLI_minus_2 = Format(tgtWs.Cells(r, "H").Value, "##0.00")
             Exit For
         End If
     Next r
     '
     ' Populate data to the UserForm
     '
+    PLIDetailsForm.tbCompanyIdx.Value = companyIdx
     PLIDetailsForm.tbCompanyName.Value = companyName
-    PLIDetailsForm.lblPLI.Caption = ""
-    PLIDetailsForm.fyLabel.Value = OM_Title
-    PLIDetailsForm.fyminus1Label.Value = OMMinus1_Title
-    PLIDetailsForm.fyMinus2Label.Value = OMMinus2_Title
-    PLIDetailsForm.tbOMAverage.Value = OM_average
-    PLIDetailsForm.tbOM.Value = OM
-    PLIDetailsForm.tbOMMinus1.Value = OM_minus_1
-    PLIDetailsForm.tbOMMinus2.Value = OM_minus_2
+    PLIDetailsForm.lblPLI.Caption = PLIString
+    PLIDetailsForm.fyLabel.Value = PLI_Title
+    PLIDetailsForm.fyminus1Label.Value = PLIMinus1_Title
+    PLIDetailsForm.fyMinus2Label.Value = PLIMinus2_Title
+    PLIDetailsForm.tbPLIAverage.Value = PLI_average
+    PLIDetailsForm.tbPLI.Value = PLI
+    PLIDetailsForm.tbPLIMinus1.Value = PLI_minus_1
+    PLIDetailsForm.tbPLIMinus2.Value = PLI_minus_2
     ' Display the UserForm
     PLIDetailsForm.Show
     
