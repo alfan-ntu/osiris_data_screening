@@ -37,8 +37,8 @@ Sub Workbook_Open()
     Debug.Print "Assigning shortcut Ctrl-Shift-W to 'WrapCell'"
     
     ' Assign the shortcut key Ctrl-Shift-C to the subroutine Sub RedCrossout in Common_Utilities module
-    Application.OnKey "+^{C}", "RedCrossout"
-    Debug.Print "Assigning shortcut Ctrl-Shift-D to 'RedCrossout'"
+    ' Application.OnKey "+^{C}", "RedCrossout"
+    ' Debug.Print "Assigning shortcut Ctrl-Shift-D to 'RedCrossout'"
     
     ' Assign the shortcut key Ctrl-Shift-O to the subroutine Sub CompanyOMDetails in Common_Utitities module
     Application.OnKey "+^{O}", "CompanyOMDetails"

@@ -1,6 +1,7 @@
 Attribute VB_Name = "Common_Utilities"
 '
-'   Description: A group of funtion utilities or gadgets common to all Excel workbooks
+'   Description: A group of funtion utilities or gadgets common to all Excel workbooks, primarily
+'                to support data screening of Osiris comparable company results
 '
 '   Date: 2024/4/12
 '   Author: maoyi.fan@yapro.com.tw
@@ -24,19 +25,42 @@ Attribute VB_Name = "Common_Utilities"
 '       6) CompanyNCPDetails (Ctrl-Shift-N): This is more an Osiris data screening utilities. It looks up the
 '                                           Net Cost Plus financial data of the company in the selected cell
 '
+'       7) Added list of business description, comparable state, general layout of the primary UserFrame
+'
+'   ToDo's:
+'       1) Move to previous or next comparable company for review
+'       2) Confirm the comparable classification
+'       3) Reload the original record
+'       4) Store the classification to the
+'
 Option Explicit
-Public Const WORKSHEET_LIST As String = "Worksheet List"
-Public Const WORKSHEET_INDEX_COLUMN     As String = "A"
-Public Const WORKSHEET_NAME_COLUMN      As String = "B"
-Public Const WORKSHEET_VISIBLE_COLUMN   As String = "C"
+Public Const WORKSHEET_LIST                     As String = "Worksheet List"
+Public Const WORKSHEET_INDEX_COLUMN             As String = "A"
+Public Const WORKSHEET_NAME_COLUMN              As String = "B"
+Public Const WORKSHEET_VISIBLE_COLUMN           As String = "C"
 '
 ' Constant definitions associated with data screening of Osiris search/rejection results
 ' Note: The following two constants might be different from company to company
 '
-Public Const OM_DETAILS_SHEET           As String = "Benchmark 1"
-Public Const NCP_DETAILS_SHEET          As String = "Benchmark 4"
-Public Const CONST_OM_PLI               As String = "Operating Margin"
-Public Const CONST_NCP_PLI              As String = "Net Cost Plus"
+Public Const OM_DETAILS_SHEET                   As String = "Benchmark 1"
+Public Const NCP_DETAILS_SHEET                  As String = "Benchmark 4"
+Public Const CONST_OM_PLI                       As String = "Operating Margin"
+Public Const CONST_NCP_PLI                      As String = "Net Cost Plus"
+
+Public Const CONST_COMPARABLE_STATE_TBD         As String = "TBD"
+Public Const CONST_COMPARABLE_STATE_NG          As String = "NG"
+Public Const CONST_COMPARABLE_STATE_OK          As String = "OK"
+Public Const CONST_COMPARABLE_STATE_CONDITION   As String = "Condition"
+
+Public Const UNICODE_CHECK                      As Integer = 10004
+Public Const UNICODE_FORBIDDEN                  As Integer = 8856
+
+Public Const RR_SIG_DIFF                        As String = "Significantly different activities or products"
+Public Const RR_BIG_RD_EXPENSE                  As String = "Consolidated and Unconsolidated Research And Development Expense / Total Net Sales is greater than or equal to 0.01"
+Public Const RR_BIG_MARKETING_EXPENSE           As String = "Consolidated and Unconsolidated Advertising Expense / Total Net Sales is greater than or equal to 0.01"
+Public Const RR_MISSING_DATA                    As String = "Missing Financial Data"
+Public Const RR_OTHERS                          As String = "Others"
+
 
 Public newlyCreated As Boolean
 
@@ -69,12 +93,19 @@ Attribute CompanyPLIDetails.VB_ProcData.VB_Invoke_Func = "O\n14"
     Dim targetWorksheetName As String
     Dim PLI_Title, PLIMinus1_Title, PLIMinus2_Title As String
     Dim PLI_average, PLI, PLI_minus_1, PLI_minus_2 As String
+    Dim comparableStateLabel As String
     Dim selectedRange, tempRange As Range
     Dim lRow, r As Long
     
+    ' variables for retrieving bussiness information
+    Dim activeCellRow, activeCellColumn As Long
+    
+    activeCellRow = ActiveCell.Row
     ' Get the company name of the current row
-    companyName = ActiveSheet.Cells(ActiveCell.Row, "B").Value
+    companyName = ActiveSheet.Cells(activeCellRow, "B").Value
     Debug.Print "Company name: " & companyName
+    PLIString = ActiveSheet.Cells(activeCellRow, "N").Value
+    Debug.Print "Comparable state: " & AscW(PLIString)
     
     If PLI_Switch = CONST_OM_PLI Then
         targetWorksheetName = OM_DETAILS_SHEET
@@ -86,7 +117,7 @@ Attribute CompanyPLIDetails.VB_ProcData.VB_Invoke_Func = "O\n14"
     
     Set tgtWs = Worksheets(targetWorksheetName)
     Set selectedRange = tgtWs.Range("B15")
-    
+    ' Retrieve PLI numbers of the company under review
     PLI_Title = CStr(tgtWs.Cells(4, "E").Value)
     PLI_Title = CleanMessyString(PLI_Title)
     PLIMinus1_Title = tgtWs.Cells(4, "F").Value
@@ -110,7 +141,14 @@ Attribute CompanyPLIDetails.VB_ProcData.VB_Invoke_Func = "O\n14"
     ' Populate data to the UserForm
     '
     PLIDetailsForm.tbCompanyIdx.Value = companyIdx
-    PLIDetailsForm.tbCompanyName.Value = companyName
+    PLIDetailsForm.tbCompanyName.Value = ActiveSheet.Cells(activeCellRow, "B").Value
+    PLIDetailsForm.tbPrimaryBusiness.Value = ActiveSheet.Cells(activeCellRow, "C").Value
+    PLIDetailsForm.tbBusinessDescription.Value = ActiveSheet.Cells(activeCellRow, "D").Value
+    PLIDetailsForm.tbProductAndService.Value = ActiveSheet.Cells(activeCellRow, "E").Value
+    ' Determine comparable state label
+    comparableStateLabel = ActiveSheet.Cells(activeCellRow, "N").Value
+    PLIDetailsForm.cboxComparableState.Value = ReturnStateLabel(comparableStateLabel)
+    
     PLIDetailsForm.lblPLI.Caption = PLIString
     PLIDetailsForm.fyLabel.Value = PLI_Title
     PLIDetailsForm.fyminus1Label.Value = PLIMinus1_Title
@@ -119,11 +157,27 @@ Attribute CompanyPLIDetails.VB_ProcData.VB_Invoke_Func = "O\n14"
     PLIDetailsForm.tbPLI.Value = PLI
     PLIDetailsForm.tbPLIMinus1.Value = PLI_minus_1
     PLIDetailsForm.tbPLIMinus2.Value = PLI_minus_2
+    '
     ' Display the UserForm
+    '
     PLIDetailsForm.Show
     
 End Sub
 
+'
+' Description: Returns comparable state label, especially handles those non-ASCII code included in Osiris database search results
+' Code Date: 2024/04/14
+'
+Function ReturnStateLabel(comparableState As String) As String
+    Debug.Print "Comparable state string: " & AscW(comparableState)
+    If AscW(comparableState) = UNICODE_CHECK Then
+        ReturnStateLabel = Common_Utilities.CONST_COMPARABLE_STATE_TBD
+    ElseIf AscW(comparableState) = UNICODE_FORBIDDEN Then
+        ReturnStateLabel = Common_Utilities.CONST_COMPARABLE_STATE_NG
+    Else
+        ReturnStateLabel = comparableState
+    End If
+End Function
 
 '
 ' Description: Go to the first worksheet of the active workbook
@@ -310,7 +364,6 @@ Public Function CleanMessyString(ByVal Str As String) As String
                 'Bad stuff
                 'https://www.ionos.com/digitalguide/server/know-how/ascii-codes-overview-of-all-characters-on-the-ascii-table/
                 CleanString = Left(CleanString, i - 1) & " " & Mid(CleanString, i + 1)
-
             Case Else
                 'Keep
 
