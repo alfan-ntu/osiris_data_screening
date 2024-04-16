@@ -1,6 +1,6 @@
 VERSION 5.00
 Begin {C62A69F0-16DC-11CE-9E98-00AA00574A4F} PLIDetailsForm 
-   Caption         =   "可比較公司歷年利潤率"
+   Caption         =   "Osiris 可比較公司篩選工具"
    ClientHeight    =   10104
    ClientLeft      =   108
    ClientTop       =   456
@@ -20,6 +20,7 @@ Attribute VB_Exposed = False
 '   Author: maoyi.fan@yapro.com.tw
 '   Ver.: 0.1b
 '   Revision History:
+'       -
 '       - 2024/4/12, 0.1b: Add NCP support by abstracting the data search and display by PLI
 '       - 2024/4/11, 0.1a: initial version
 '
@@ -46,7 +47,9 @@ Sub comparableReview(PLI_Switch As String)
     Call populateComboBoxList
     currentRow = ActiveCell.Row
     Call comparableReviewByRow(PLI_Switch, currentRow)
-    Me.Show
+    ' Experimental modification, added vbModeless so that Showing UserForm and operating worksheet contents
+    ' can be done at the same time
+    Me.Show vbModeless
 End Sub
 
 
@@ -64,6 +67,7 @@ Sub comparableReviewByRow(ByVal PLI_Switch As String, ByVal currentRow As Long)
     Dim PLI_average, PLI, PLI_minus_1, PLI_minus_2              As String
     Dim comparableStateLabel, rejectionReason                   As String
     Dim lRow, r                                                 As Long
+    Dim screenStat                                              As Screening_Statistics
     
     companyIdx = ActiveSheet.Cells(currentRow, Osiris_Review_Constant.CONST_IDX_COLUMN).Value
     companyName = ActiveSheet.Cells(currentRow, Osiris_Review_Constant.CONST_COMPANY_NAME_COLUMN).Value
@@ -116,6 +120,10 @@ Sub comparableReviewByRow(ByVal PLI_Switch As String, ByVal currentRow As Long)
     If AscW(rejectionReason) = Osiris_Review_Constant.UNICODE_CHECK Then
         rejectionReason = Osiris_Review_Constant.CONST_COMPARABLE_STATE_TBD
     End If
+    '
+    ' Determine screening statistics
+    '
+    screenStat = Osiris_Review_Gadgets.ScreenStatistics(ActiveSheet)
     
     Me.cboxRejectionReason.Value = rejectionReason
     Me.tbCompanyIdx.Value = companyIdx & "/" & CStr(lRow - 2)
@@ -129,7 +137,11 @@ Sub comparableReviewByRow(ByVal PLI_Switch As String, ByVal currentRow As Long)
     Me.tbPLI.Value = PLI
     Me.tbPLIMinus1.Value = PLI_minus_1
     Me.tbPLIMinus2.Value = PLI_minus_2
-    
+    Me.tbComparableCount.Value = screenStat.okCount
+    Me.tbConditionCount.Value = screenStat.conditionCount
+    Me.tbRejectCount.Value = screenStat.rejectCount
+    Me.tbUnscreenCount.Value = screenStat.unscreenedCount
+ 
 End Sub
 '
 ' Description: List the reviewed results and comparable classification of the reviewed company

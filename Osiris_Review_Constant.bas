@@ -40,8 +40,20 @@ Public Const CONST_PLI_AVERAGE_COLUMN           As String = "D"
 Public Const CONST_PLI_CY_COLUMN                As String = "E"
 Public Const CONST_PLI_LY_COLUMN                As String = "F"
 Public Const CONST_PLI_LLY_COLUMN               As String = "H"
+Public Const CONST_PLI_COMPARABLE_COLUMN        As String = "I"
 
+'
+' Benchmark worksheet related layout
+'
+Public Const BMK_AVG_YEAR                       As Integer = 0
+Public Const BMK_CURRENT_YEAR                   As Integer = 1
+Public Const BMK_LAST_YEAR                      As Integer = 2
+Public Const BMK_YEAR_BEFORE_LAST_YEAR          As Integer = 4
+Public Const BMK_COMPARABLE_OFFSET              As Integer = 5
 
+'
+' UserForm related constants
+'
 Public Const CONST_COMPARABLE_STATE_TBD         As String = "TBD"
 Public Const CONST_COMPARABLE_STATE_NG          As String = "NG"
 Public Const CONST_COMPARABLE_STATE_OK          As String = "OK"
