@@ -1,10 +1,10 @@
 VERSION 5.00
 Begin {C62A69F0-16DC-11CE-9E98-00AA00574A4F} PLIDetailsForm 
    Caption         =   "Osiris 可比較公司篩選工具"
-   ClientHeight    =   10104
+   ClientHeight    =   10092
    ClientLeft      =   108
    ClientTop       =   456
-   ClientWidth     =   12816
+   ClientWidth     =   12732
    OleObjectBlob   =   "PLIDetailsForm.frx":0000
    StartUpPosition =   1  'CenterOwner
 End
@@ -14,13 +14,13 @@ Attribute VB_Creatable = False
 Attribute VB_PredeclaredId = True
 Attribute VB_Exposed = False
 '
-'   Description: A UserForm supporting Osiris result screening
+'   Description: A UserForm supporting Osiris result screening; Primary progam dealing with Osiris data screening
 '
-'   Date: 2024/4/14
+'   Date: 2024/4/17
 '   Author: maoyi.fan@yapro.com.tw
-'   Ver.: 0.1b
+'   Ver.: 0.1c
 '   Revision History:
-'       -
+'       - 2024/4/17, 0.1c: Add comment text box; save edited and review status back to Screening_Worksheet
 '       - 2024/4/12, 0.1b: Add NCP support by abstracting the data search and display by PLI
 '       - 2024/4/11, 0.1a: initial version
 '
@@ -66,12 +66,18 @@ Sub comparableReviewByRow(ByVal PLI_Switch As String, ByVal currentRow As Long)
     Dim PLI_Title, PLIMinus1_Title, PLIMinus2_Title             As String
     Dim PLI_average, PLI, PLI_minus_1, PLI_minus_2              As String
     Dim comparableStateLabel, rejectionReason                   As String
+    Dim commentText                                             As String
     Dim lRow, r                                                 As Long
     Dim screenStat                                              As Screening_Statistics
+    Dim numberOfCompanies                                       As Integer
     
     companyIdx = ActiveSheet.Cells(currentRow, Osiris_Review_Constant.CONST_IDX_COLUMN).Value
     companyName = ActiveSheet.Cells(currentRow, Osiris_Review_Constant.CONST_COMPANY_NAME_COLUMN).Value
-    Debug.Print "Company name: " & companyName
+    Set selectedRange = ActiveSheet.Cells(currentRow, Osiris_Review_Constant.CONST_COMPANY_NAME_COLUMN)
+    numberOfCompanies = Osiris_Review_Gadgets.FindMaximumRow(selectedRange) - 2
+    
+    Debug.Print "Company name: " & companyName & " Total number of companies: " & CStr(numberOfCompanies)
+    
     PLIString = ActiveSheet.Cells(currentRow, Osiris_Review_Constant.CONST_STATUS_COLUMN).Value
     Debug.Print "Comparable state: " & AscW(PLIString)
     
@@ -111,6 +117,7 @@ Sub comparableReviewByRow(ByVal PLI_Switch As String, ByVal currentRow As Long)
     primaryBusiness = ActiveSheet.Cells(currentRow, Osiris_Review_Constant.CONST_TRADE_COLUMN).Value
     businessDescription = ActiveSheet.Cells(currentRow, Osiris_Review_Constant.CONST_COMPANY_DESCRIPTION_COLUMN).Value
     productAndService = ActiveSheet.Cells(currentRow, Osiris_Review_Constant.CONST_PNS_COLUMN).Value
+    commentText = ActiveSheet.Cells(currentRow, Osiris_Review_Constant.CONST_COMMENT_COLUMN).Value
     '
     ' Determine comparable state label
     '
@@ -126,11 +133,12 @@ Sub comparableReviewByRow(ByVal PLI_Switch As String, ByVal currentRow As Long)
     screenStat = Osiris_Review_Gadgets.ScreenStatistics(ActiveSheet)
     
     Me.cboxRejectionReason.Value = rejectionReason
-    Me.tbCompanyIdx.Value = companyIdx & "/" & CStr(lRow - 2)
+    Me.tbCompanyIdx.Value = companyIdx & "/" & CStr(numberOfCompanies)
     Me.tbCompanyName.Value = companyName
     Me.tbPrimaryBusiness.Value = primaryBusiness
     Me.tbBusinessDescription.Value = businessDescription
     Me.tbProductAndService.Value = productAndService
+    Me.tbComment.Value = commentText
     Me.cboxComparableState.Value = comparableStateLabel
     Me.lblPLI.Caption = PLIString
     Me.tbPLIAverage.Value = PLI_average
@@ -147,34 +155,97 @@ End Sub
 ' Description: List the reviewed results and comparable classification of the reviewed company
 ' ToDo's: Actually update the Screening_Worksheet with the reviewed classification and reason or business
 '         description
+'         - Stuffs acctually updated to Screening_Worksheet include: cboxComparableState, cboxRejectionReason,
+'           tbBusinessDescription and tbComment
+'         - Widget contents to be updated include, tbComparableCount, tbConditionCount, tbRejectCount and
+'           tbUnscreenCount
 '
 Private Sub cbConfirm_Click()
     Dim companyUnderReview, comparableCategory, rejectionReason, comparableBusinessDescription As String
     Dim msgbox_prompt As String
+    Dim msgbox_result As Integer
     Dim lRow, r As Long
-    
+    Dim updateScreeningWorksheet As Boolean
     Dim activeCellRow, activeCellColumn As Long
+    
+    updateScreeningWorksheet = False
     activeCellRow = ActiveCell.Row
-        
+    
     companyUnderReview = Me.tbCompanyName.Value
     comparableCategory = Me.cboxComparableState.Value
     rejectionReason = Me.cboxRejectionReason.Value
     comparableBusinessDescription = Me.tbBusinessDescription
-    msgbox_prompt = companyUnderReview & " is classified as " & comparableCategory
+    msgbox_prompt = companyUnderReview & " 分類為 " & comparableCategory
     If comparableCategory = Osiris_Review_Constant.CONST_COMPARABLE_STATE_NG Then
         If rejectionReason = "" Then
-            msgbox_prompt = msgbox_prompt & vbNewLine & "Rejection reason cannot be blank!"
-            MsgBox msgbox_prompt, vbExclamation
+            msgbox_prompt = msgbox_prompt & vbNewLine & "拒絕理由不得為空白!"
+            MsgBox msgbox_prompt, vbCritical
         Else
-            msgbox_prompt = msgbox_prompt & vbNewLine & "Rejection: " & rejectionReason
-            MsgBox msgbox_prompt, vbOKOnly Or vbInformation
+            msgbox_prompt = msgbox_prompt & vbNewLine & "拒絕理由: " & rejectionReason
+            msgbox_result = MsgBox(msgbox_prompt, vbYesNo Or vbInformation)
+            If msgbox_result = vbYes Then
+                updateScreeningWorksheet = True
+            End If
         End If
     ElseIf comparableCategory = Osiris_Review_Constant.CONST_COMPARABLE_STATE_OK Then
-        msgbox_prompt = msgbox_prompt & vbNewLine & "Business Description: " & comparableBusinessDescription
-        MsgBox msgbox_prompt, vbOKOnly Or vbInformation
+        msgbox_prompt = msgbox_prompt & vbNewLine & "公司描述: " & comparableBusinessDescription
+        msgbox_result = MsgBox(msgbox_prompt, vbYesNo Or vbInformation)
+        If msgbox_result = vbYes Then
+            updateScreeningWorksheet = True
+        End If
+    ElseIf comparableCategory = Osiris_Review_Constant.CONST_COMPARABLE_STATE_CONDITION Then
+        If rejectionReason = "" Then
+            msgbox_prompt = msgbox_prompt & vbNewLine & "條件理由不得為空白!"
+            MsgBox msgbox_prompt, vbCritical
+        Else
+            msgbox_prompt = msgbox_prompt & vbNewLine & "條件性接受理由: " & rejectionReason
+            msgbox_result = MsgBox(msgbox_prompt, vbYesNo Or vbInformation)
+            If msgbox_result = vbYes Then
+                updateScreeningWorksheet = True
+            End If
+        End If
+    ElseIf comparableCategory = Osiris_Review_Constant.CONST_COMPARABLE_STATE_TBD Then
+        msgbox_prompt = msgbox_prompt & vbNewLine & "點擊上一筆或下一筆按鈕，繼續過濾!"
+        MsgBox msgbox_prompt, vbInformation
     End If
     
+    If updateScreeningWorksheet Then
+        Call updateWorksheets
+    End If
 End Sub
+
+'
+' Description: Update Screening_Worksheet based on review results
+' Coding Date: 2024/4/17
+' ToDo's:
+'   - Update worksheet Benchmark 1 or Benchmark 4
+'
+Private Sub updateWorksheets()
+    Dim comparableCategory, rejectConditionReason, comparableBusinessDescription, reviewComment As String
+    Dim currentRow      As Long
+    Dim screenStat      As Screening_Statistics
+    
+    Debug.Print "Entering updateWorksheets...."
+    
+    comparableCategory = Me.cboxComparableState.Value
+    rejectConditionReason = Me.cboxRejectionReason.Value
+    comparableBusinessDescription = Me.tbBusinessDescription.Value
+    reviewComment = Me.tbComment.Value
+    currentRow = ActiveCell.Row
+    
+    ' update Screening_Worksheet
+    ActiveSheet.Cells(currentRow, Osiris_Review_Constant.CONST_STATUS_COLUMN).Value = comparableCategory
+    ActiveSheet.Cells(currentRow, Osiris_Review_Constant.CONST_MANUAL_REVIEW_COLUMN).Value = rejectConditionReason
+    ActiveSheet.Cells(currentRow, Osiris_Review_Constant.CONST_COMMENT_COLUMN).Value = reviewComment
+    
+    ' update UserForm
+    screenStat = Osiris_Review_Gadgets.ScreenStatistics(ActiveSheet)
+    Me.tbComparableCount.Value = screenStat.okCount
+    Me.tbConditionCount.Value = screenStat.conditionCount
+    Me.tbRejectCount.Value = screenStat.rejectCount
+    Me.tbUnscreenCount.Value = screenStat.unscreenedCount
+End Sub
+
 
 '
 ' Description: The command button OK is clicked to close the UserForm
@@ -245,11 +316,21 @@ Private Sub cbReload_Click()
     Debug.Print "Reload the record under review from the worksheet 列表 (2)"
 End Sub
 
+
 '
 ' Description: close the UserForm when ESC key is pressed when the focus is on Business Description
 '              textbox
 '
 Private Sub tbBusinessDescription_KeyPress(ByVal KeyAscii As MSForms.ReturnInteger)
+    If KeyAscii = 27 Then
+       Unload Me
+    End If
+End Sub
+
+'
+' Description: close the UserForm when ESC key is pressed
+'
+Private Sub tbComment_KeyPress(ByVal KeyAscii As MSForms.ReturnInteger)
     If KeyAscii = 27 Then
        Unload Me
     End If
@@ -303,5 +384,4 @@ Private Sub populateComboBoxList()
         .AddItem Osiris_Review_Constant.RR_OTHERS
     End With
 End Sub
-
 

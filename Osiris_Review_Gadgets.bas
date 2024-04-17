@@ -2,12 +2,12 @@ Attribute VB_Name = "Osiris_Review_Gadgets"
 '
 '   Description: A module containing Osiris data review associated gadgets
 '
-'   Date: 2024/4/16
+'   Date: 2024/4/17
 '   Author: maoyi.fan@yapro.com.tw
 '   Ver.: 0.1c
 '   Revision History:
 '       - 2024/4/16, 0.1c: Added function DoComparableQuartile() to calculate quartile numbers
-'                          of comparable companies
+'                          of comparable companies and other minor fixes
 '       - 2024/4/15, 0.1b: First added
 '
 '   ToDo's:
@@ -152,6 +152,8 @@ Function ScreenStatistics(ByVal screenWorksheet As Worksheet) As Screening_Stati
             ss.okCount = ss.okCount + 1
         ElseIf selectedRange.Value = Osiris_Review_Constant.CONST_COMPARABLE_STATE_TBD Then
             ss.unscreenedCount = ss.unscreenedCount + 1
+        ElseIf AscW(selectedRange.Value) = Osiris_Review_Constant.UNICODE_CHECK Then
+            ss.unscreenedCount = ss.unscreenedCount + 1
         End If
     Next r
     ScreenStatistics = ss
@@ -170,7 +172,12 @@ End Function
 Function FindMaximumRow(ByVal targetRange As Range) As Long
     Dim lRow As Long
     
-    lRow = targetRange.End(xlDown).Row
+    ' Boundary check
+    If targetRange.Offset(1, 0).Value = "" Then
+        lRow = targetRange.Row
+    Else
+        lRow = targetRange.End(xlDown).Row
+    End If
     FindMaximumRow = lRow
 End Function
 

@@ -3,7 +3,7 @@ Attribute VB_Name = "Common_Utilities"
 '   Description: A group of funtion utilities or gadgets common to all Excel workbooks, primarily
 '                to support data screening of Osiris comparable company results
 '
-'   Date: 2024/4/15
+'   Date: 2024/4/16
 '   Author: maoyi.fan@yapro.com.tw
 '   Ver.: 0.1c
 '   Revision History:
@@ -28,11 +28,13 @@ Attribute VB_Name = "Common_Utilities"
 '       6) CompanyNCPDetails (Ctrl-Shift-N): This is more an Osiris data screening utilities. It looks up the
 '                                           Net Cost Plus financial data of the company in the selected cell
 '
-'
 '   ToDo's:
 '       1)
 '
 Option Explicit
+'
+' Constants and global variables supporting worksheet lists generation
+'
 Public Const WORKSHEET_LIST                     As String = "Worksheet List"
 Public Const WORKSHEET_INDEX_COLUMN             As String = "A"
 Public Const WORKSHEET_NAME_COLUMN              As String = "B"
@@ -222,51 +224,3 @@ Function worksheetExists(sheetName As String) As Boolean
     Next ws
 End Function
 
-'
-' Description: Experimental code to test conditional quartile function of array of dynamic size
-' Code Date: 2024/4/16
-' ToDo's: To remove this subroutine after development
-'
-Sub DoConditionQuartile()
-    Dim targetRange, tmpRange As Range
-    Dim PLI() As Double
-    Dim minPLI, lowerQuartilePLI, medianQuartilePLI, upperQuartilePLI, maxPLI As Double
-    Dim rowCount, r As Long
-    Dim topLeftRow, topLeftCol, c As Long
-    Dim comparableCount As Long
-    Dim PLI_value, Comparable_flag As String
-    
-    Set targetRange = Range("G15:H80")
-    targetRange.Select
-    comparableCount = 0
-    rowCount = targetRange.Rows.Count
-    Debug.Print "Row counts of the selected range is: " & CStr(rowCount)
-    
-    Set tmpRange = targetRange.Cells(1, 1)
-    topLeftRow = tmpRange.Row
-    topLeftCol = tmpRange.Column
-    c = topLeftCol
-    Debug.Print "Row addr: " & topLeftRow & " Column addr: " & topLeftCol
-    For r = topLeftRow To topLeftRow + rowCount
-        PLI_value = Format(Cells(r, c).Value, "##0.00")
-        Comparable_flag = Cells(r, c + 1).Value
-        If Comparable_flag = "Yes" Then
-            comparableCount = comparableCount + 1
-            ReDim Preserve PLI(comparableCount - 1)
-            PLI(comparableCount - 1) = CDbl(Cells(r, c).Value)
-        End If
-    Next r
-    Debug.Print "Number of comparable company: " & CStr(comparableCount)
-    Debug.Print "Comparable List: "
-    For r = 0 To comparableCount - 1
-        Debug.Print "PLI(" & CStr(r) & "): " & PLI(r)
-    Next r
-    minPLI = WorksheetFunction.Quartile(PLI, 0)
-    lowerQuartilePLI = WorksheetFunction.Quartile(PLI, 1)
-    medianQuartilePLI = WorksheetFunction.Quartile(PLI, 2)
-    upperQuartilePLI = WorksheetFunction.Quartile(PLI, 3)
-    maxPLI = WorksheetFunction.Quartile(PLI, 4)
-    
-    Debug.Print "Min Quartile: " & CStr(minPLI) & " Lower Quartile: " & CStr(lowerQuartilePLI) & " Median Quartile: " & CStr(medianQuartilePLI)
-    Debug.Print "Upper Quartile: " & CStr(upperQuartilePLI) & " Max Quartile: " & CStr(maxPLI)
-End Sub

@@ -2,9 +2,9 @@ Attribute VB_Name = "Osiris_Review_Constant"
 '
 '   Description: A module listing  Osiris data review associated constants
 '
-'   Date: 2024/4/15
+'   Date: 2024/4/17
 '   Author: maoyi.fan@yapro.com.tw
-'   Ver.: 0.1b
+'   Ver.: 0.1c
 '   Revision History:
 '       - 2024/4/15, 0.1b: First added
 '
@@ -32,6 +32,7 @@ Public Const CONST_COMPANY_DESCRIPTION_COLUMN   As String = "D"
 Public Const CONST_PNS_COLUMN                   As String = "E"
 Public Const CONST_MANUAL_REVIEW_COLUMN         As String = "M"
 Public Const CONST_STATUS_COLUMN                As String = "N"
+Public Const CONST_COMMENT_COLUMN               As String = "O"
 '
 ' Layout constants associated with PLI Benchmark worksheet
 '
