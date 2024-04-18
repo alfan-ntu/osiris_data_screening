@@ -15,10 +15,12 @@ Attribute VB_Name = "Osiris_Review_Constant"
 '
 ' Constant definitions associated with data screening of Osiris search/rejection results
 '
-Public Const OM_DETAILS_SHEET                   As String = "Benchmark 1"
-Public Const NCP_DETAILS_SHEET                  As String = "Benchmark 4"
 Public Const CONST_OM_PLI                       As String = "Operating Margin"
 Public Const CONST_NCP_PLI                      As String = "Net Cost Plus"
+Public Const OM_DETAILS_SHEET                   As String = "Benchmark 1"
+Public Const OM_COMPARABLE_SHEET                As String = "OM_Comparables"
+Public Const NCP_DETAILS_SHEET                  As String = "Benchmark 4"
+Public Const NCP_COMPARABLE_SHEET               As String = "NCP_Comparables"
 Public Const CONST_OM_PLI_LABEL                 As String = "營業淨利率"
 Public Const CONST_NCP_PLI_LABEL                As String = "成本及營業費用淨利率"
 '
@@ -68,5 +70,6 @@ Public Const RR_BIG_RD_EXPENSE                  As String = "Consolidated and Un
 Public Const RR_BIG_MARKETING_EXPENSE           As String = "Consolidated and Unconsolidated Advertising Expense / Total Net Sales is greater than or equal to 0.01"
 Public Const RR_MISSING_DATA                    As String = "Missing Financial Data"
 Public Const RR_OTHERS                          As String = "Others"
+Public Const RR_BLANK                           As String = ""
 
 

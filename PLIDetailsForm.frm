@@ -16,19 +16,19 @@ Attribute VB_Exposed = False
 '
 '   Description: A UserForm supporting Osiris result screening; Primary progam dealing with Osiris data screening
 '
-'   Date: 2024/4/17
+'   Date: 2024/4/18
 '   Author: maoyi.fan@yapro.com.tw
-'   Ver.: 0.1c
+'   Ver.: 0.1d
 '   Revision History:
+'       - 2024/4/18, 0.1d: add ensurePLIWorksheetExists
 '       - 2024/4/17, 0.1c: Add comment text box; save edited and review status back to Screening_Worksheet
 '       - 2024/4/12, 0.1b: Add NCP support by abstracting the data search and display by PLI
 '       - 2024/4/11, 0.1a: initial version
 '
 '   ToDo's:
-'       1) Add screening results update in the UserForm
-'       2) Confirm the comparable classification
+'       1) Update review OK results to Benchmark 1 or Benchmark 4 worksheet according to the PLI selected
+'       2) Do quartile calculations based on the comparable states listed in Benchmark 1 or Benchmark 4
 '       3) Reload the original record
-'       4) Store the classification to the PLI reviewed worksheet
 '
 '
 Option Explicit
@@ -41,6 +41,10 @@ Option Explicit
 '
 Sub comparableReview(PLI_Switch As String)
     Dim currentRow          As Long
+    
+    currentRow = ActiveCell.Row
+    Call ensurePLIWorksheetExists(PLI_Switch)
+    
     '
     ' Get the company name of the current row and pass it to comparableReviewByRow
     '
@@ -52,6 +56,48 @@ Sub comparableReview(PLI_Switch As String)
     Me.Show vbModeless
 End Sub
 
+'
+' Description: Ensure the target worksheet exists based on the selection of PLI_Switch
+' Coding Date: 2024/4/18
+'
+Sub ensurePLIWorksheetExists(PLI_Switch As String)
+    Dim tgtWshtName             As String
+    Dim originalCell            As Range
+    Dim originalSheet           As String
+    Dim newWorksheetName        As String
+    Dim worksheetIndex          As Integer
+    
+    Set originalCell = ActiveCell
+    originalSheet = originalCell.Worksheet.Name
+    
+    If PLI_Switch = Osiris_Review_Constant.CONST_OM_PLI Then
+        If Common_Utilities.worksheetExists(Osiris_Review_Constant.OM_COMPARABLE_SHEET) Then
+            Debug.Print "Target worksheet: " & Osiris_Review_Constant.OM_COMPARABLE_SHEET & " for Operating Margin review exists!"
+        Else
+            ' Create the missing Operation Margin review worksheet
+            Debug.Print "Target worksheet: " & Osiris_Review_Constant.OM_COMPARABLE_SHEET & " does not exist!"
+            Sheets(Osiris_Review_Constant.OM_DETAILS_SHEET).Copy After:=Sheets(Osiris_Review_Constant.OM_DETAILS_SHEET)
+            worksheetIndex = Sheets(Osiris_Review_Constant.OM_DETAILS_SHEET).Index
+            Sheets(worksheetIndex + 1).Name = Osiris_Review_Constant.OM_COMPARABLE_SHEET
+            Debug.Print "Newly created worksheet name: " & Sheets(worksheetIndex + 1).Name
+        End If
+    ElseIf PLI_Switch = Osiris_Review_Constant.CONST_NCP_PLI Then
+        If Common_Utilities.worksheetExists(Osiris_Review_Constant.NCP_COMPARABLE_SHEET) Then
+            Debug.Print "Target worksheet: " & Osiris_Review_Constant.NCP_COMPARABLE_SHEET & " for Net Cost Plus review exists!"
+        Else
+            ' Create the missing Net Cost Plus review worksheet
+            Debug.Print "Target worksheet: " & Osiris_Review_Constant.NCP_COMPARABLE_SHEET & " does not exist!"
+            Sheets(Osiris_Review_Constant.NCP_DETAILS_SHEET).Copy After:=Sheets(Osiris_Review_Constant.NCP_DETAILS_SHEET)
+            worksheetIndex = Sheets(Osiris_Review_Constant.NCP_DETAILS_SHEET).Index
+            Sheets(worksheetIndex + 1).Name = Osiris_Review_Constant.NCP_COMPARABLE_SHEET
+            Debug.Print "Newly created worksheet name: " & Sheets(worksheetIndex + 1).Name
+        End If
+    End If
+    ' Restore original selected cell
+    Sheets(originalSheet).Select
+    originalCell.Select
+
+End Sub
 
 '
 ' Description: Break down the company information display and review
@@ -130,6 +176,8 @@ Sub comparableReviewByRow(ByVal PLI_Switch As String, ByVal currentRow As Long)
     '
     ' Determine screening statistics
     '
+    ' Debug.Print "ActiveSheet name: " & ActiveSheet.Name
+    
     screenStat = Osiris_Review_Gadgets.ScreenStatistics(ActiveSheet)
     
     Me.cboxRejectionReason.Value = rejectionReason
@@ -151,8 +199,10 @@ Sub comparableReviewByRow(ByVal PLI_Switch As String, ByVal currentRow As Long)
     Me.tbUnscreenCount.Value = screenStat.unscreenedCount
  
 End Sub
+
 '
 ' Description: List the reviewed results and comparable classification of the reviewed company
+' Coding Date: 2024/4/18
 ' ToDo's: Actually update the Screening_Worksheet with the reviewed classification and reason or business
 '         description
 '         - Stuffs acctually updated to Screening_Worksheet include: cboxComparableState, cboxRejectionReason,
@@ -177,6 +227,7 @@ Private Sub cbConfirm_Click()
     comparableBusinessDescription = Me.tbBusinessDescription
     msgbox_prompt = companyUnderReview & " 分類為 " & comparableCategory
     If comparableCategory = Osiris_Review_Constant.CONST_COMPARABLE_STATE_NG Then
+    ' 可比較公司判定: 不適用
         If rejectionReason = "" Then
             msgbox_prompt = msgbox_prompt & vbNewLine & "拒絕理由不得為空白!"
             MsgBox msgbox_prompt, vbCritical
@@ -188,12 +239,17 @@ Private Sub cbConfirm_Click()
             End If
         End If
     ElseIf comparableCategory = Osiris_Review_Constant.CONST_COMPARABLE_STATE_OK Then
+    ' 可比較公司判定: 可比較公司
         msgbox_prompt = msgbox_prompt & vbNewLine & "公司描述: " & comparableBusinessDescription
         msgbox_result = MsgBox(msgbox_prompt, vbYesNo Or vbInformation)
         If msgbox_result = vbYes Then
             updateScreeningWorksheet = True
+            If Me.cboxRejectionReason = Osiris_Review_Constant.CONST_COMPARABLE_STATE_TBD Then
+                Me.cboxRejectionReason.Value = Osiris_Review_Constant.RR_BLANK
+            End If
         End If
     ElseIf comparableCategory = Osiris_Review_Constant.CONST_COMPARABLE_STATE_CONDITION Then
+    ' 可比較公司判定: 條件性、需再次判定
         If rejectionReason = "" Then
             msgbox_prompt = msgbox_prompt & vbNewLine & "條件理由不得為空白!"
             MsgBox msgbox_prompt, vbCritical
@@ -205,6 +261,7 @@ Private Sub cbConfirm_Click()
             End If
         End If
     ElseIf comparableCategory = Osiris_Review_Constant.CONST_COMPARABLE_STATE_TBD Then
+    ' 可比較公司判定: 暫時略過
         msgbox_prompt = msgbox_prompt & vbNewLine & "點擊上一筆或下一筆按鈕，繼續過濾!"
         MsgBox msgbox_prompt, vbInformation
     End If
