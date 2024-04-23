@@ -2,10 +2,11 @@ Attribute VB_Name = "Osiris_Review_Constant"
 '
 '   Description: A module listing  Osiris data review associated constants
 '
-'   Date: 2024/4/17
+'   Date: 2024/4/23
 '   Author: maoyi.fan@yapro.com.tw
-'   Ver.: 0.1c
+'   Ver.: 0.1e
 '   Revision History:
+'       - 2024/4/23, 0.1e: Support reload original company records
 '       - 2024/4/15, 0.1b: First added
 '
 '   ToDo's:
@@ -23,9 +24,12 @@ Public Const NCP_DETAILS_SHEET                  As String = "Benchmark 4"
 Public Const NCP_COMPARABLE_SHEET               As String = "NCP_Comparables"
 Public Const CONST_OM_PLI_LABEL                 As String = "營業淨利率"
 Public Const CONST_NCP_PLI_LABEL                As String = "成本及營業費用淨利率"
+' SCREENINT_SHEET is actually a worksheet replicating
+Public Const SCREENING_SHEET                    As String = "Screening_Worksheet"
 '
 ' Layout constants associated with 列表 (2) or Screening_Worksheet
 '
+Public Const MASTER_SHEET                       As String = "列表 (2)"
 Public Const CONST_BASE_RANGE                   As String = "B3"
 Public Const CONST_IDX_COLUMN                   As String = "A"
 Public Const CONST_COMPANY_NAME_COLUMN          As String = "B"
@@ -37,8 +41,11 @@ Public Const CONST_STATUS_COLUMN                As String = "N"
 Public Const CONST_COMMENT_COLUMN               As String = "O"
 '
 ' Layout constants associated with PLI Benchmark worksheet
+' PLI Benchmark worksheet means OM_COMPARABLE_SHEET in case of Operating Margin review,
+'                               NCP_COMPARABLE_SHEET in case of Net Cost Plus review
 '
 Public Const CONST_PLI_COMPANY_COLUMN           As String = "B"
+Public Const CONST_PLI_SHEET_BASE_RANGE         As String = "B15"
 Public Const CONST_PLI_AVERAGE_COLUMN           As String = "D"
 Public Const CONST_PLI_CY_COLUMN                As String = "E"
 Public Const CONST_PLI_LY_COLUMN                As String = "F"

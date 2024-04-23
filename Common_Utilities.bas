@@ -3,9 +3,9 @@ Attribute VB_Name = "Common_Utilities"
 '   Description: A group of funtion utilities or gadgets common to all Excel workbooks, primarily
 '                to support data screening of Osiris comparable company results
 '
-'   Date: 2024/4/16
+'   Date: 2024/4/23
 '   Author: maoyi.fan@yapro.com.tw
-'   Ver.: 0.1c
+'   Ver.: 0.1e
 '   Revision History:
 '       - 2024/4/15, 0.1c: Moved Osiris data screening stuffs to PLIDetailsForm to make this Common_Utilities
 '                          as general as possible
@@ -205,7 +205,6 @@ Sub SetColumnWidth(colIndex As String, w As Integer)
     End If
 End Sub
 
-
 '
 ' Description: check if a specified worksheet exists or not
 '
@@ -217,7 +216,7 @@ Function worksheetExists(sheetName As String) As Boolean
     ' For Each ws In ThisWorkbook.Worksheets
     For Each ws In ActiveWorkbook.Worksheets
         If ws.Name = sheetName Then
-            Debug.Print "ws.Name:" & ws.Name & " and sheetName:" & sheetName
+            ' Debug.Print "ws.Name:" & ws.Name & " and sheetName:" & sheetName
             worksheetExists = True
             Exit Function
         End If

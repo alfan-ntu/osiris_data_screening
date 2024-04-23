@@ -2,10 +2,11 @@ Attribute VB_Name = "Osiris_Review_Gadgets"
 '
 '   Description: A module containing Osiris data review associated gadgets
 '
-'   Date: 2024/4/17
+'   Date: 2024/4/23
 '   Author: maoyi.fan@yapro.com.tw
-'   Ver.: 0.1c
+'   Ver.: 0.1e
 '   Revision History:
+'       - 2024/4/23, 0.1e: Added gadgets to find range of selected area
 '       - 2024/4/16, 0.1c: Added function DoComparableQuartile() to calculate quartile numbers
 '                          of comparable companies and other minor fixes
 '       - 2024/4/15, 0.1b: First added
@@ -35,6 +36,14 @@ Type Quartile_Data_Type
     medianQuartiile     As Double
     upperQuartile       As Double
     maxQuartile         As Double
+End Type
+
+'
+' Description: Type of range and validated status
+'
+Type Validated_Range
+    srcRangeStr         As String
+    valid               As Boolean
 End Type
 
 '
@@ -74,7 +83,7 @@ Function DoComparableQuartile(benchmarkRange As Range, yearIndex As Integer) As 
     Dim tmpRange                                                                As Range
     Dim PLI()                                                                   As Double
     Dim minPLI, lowerQuartilePLI, medianQuartilePLI, upperQuartilePLI, maxPLI   As Double
-    Dim comparableCount                                                         As Long
+    Dim comparableCount, rowCount, r                                            As Long
     Dim PLIValue, comparableFlag                                                As String
     Dim PLIOffset, comparableOffset                                             As Integer
     Dim q                                                                       As Quartile_Data_Type
@@ -97,27 +106,32 @@ Function DoComparableQuartile(benchmarkRange As Range, yearIndex As Integer) As 
             PLIValue = benchmarkRange.Cells(r, PLIOffset + 1).Value
         End If
         comparableFlag = benchmarkRange.Cells(r, comparableOffset + 1).Value
-
-        If comparableFlag = "Yes" Then
+        ' update PLI array if the company is categorized as a comparable company
+        If comparableFlag = Osiris_Review_Constant.CONST_COMPARABLE_STATE_OK Then
             ReDim Preserve PLI(comparableCount)
             PLI(comparableCount) = CDbl(PLIValue)
             comparableCount = comparableCount + 1
         End If
     Next r
     
-    'Debug.Print "Number of comparable company: " & CStr(comparableCount)
-    'Debug.Print "Comparable List: "
-    'For r = 0 To comparableCount - 1
-    '    Debug.Print "PLI(" & CStr(r) & "): " & PLI(r)
-    'Next r
     ' Update customized variable of data type Quartile_Data_Type
-    With q
-        .minQuartile = WorksheetFunction.Quartile(PLI, 0)
-        .lowerQuartile = WorksheetFunction.Quartile(PLI, 1)
-        .medianQuartiile = WorksheetFunction.Quartile(PLI, 2)
-        .upperQuartile = WorksheetFunction.Quartile(PLI, 3)
-        .maxQuartile = WorksheetFunction.Quartile(PLI, 4)
-    End With
+    If comparableCount > 0 Then
+        With q
+            .minQuartile = WorksheetFunction.Quartile(PLI, 0)
+            .lowerQuartile = WorksheetFunction.Quartile(PLI, 1)
+            .medianQuartiile = WorksheetFunction.Quartile(PLI, 2)
+            .upperQuartile = WorksheetFunction.Quartile(PLI, 3)
+            .maxQuartile = WorksheetFunction.Quartile(PLI, 4)
+        End With
+    Else
+        With q
+            .minQuartile = 0
+            .lowerQuartile = 0
+            .medianQuartiile = 0
+            .upperQuartile = 0
+            .maxQuartile = 0
+        End With
+    End If
     DoComparableQuartile = q
 End Function
 
@@ -133,7 +147,7 @@ Function ScreenStatistics(ByVal screenWorksheet As Worksheet) As Screening_Stati
     
     Set selectedRange = screenWorksheet.Range(Osiris_Review_Constant.CONST_BASE_RANGE)
     lRow = FindMaximumRow(selectedRange)
-    Debug.Print "Maximum number of rows I found: " & lRow
+    ' Debug.Print "Maximum number of rows I found: " & lRow
     
     With ss
         .conditionCount = 0
@@ -181,12 +195,25 @@ Function FindMaximumRow(ByVal targetRange As Range) As Long
     FindMaximumRow = lRow
 End Function
 
+
+'
+' Description: Return bottom-right cell of a range
+' Coding Date: 2024/4/23
+'
+Function getBottomRightCell(ByVal targetWs As Worksheet, ByVal rt As Range) As Range
+    Dim lRow, lCol  As Long
+    Dim targetRange As Range
+    
+    lRow = rt.End(xlDown).Row
+    lCol = rt.End(xlToRight).Column
+    Set getBottomRightCell = targetWs.Cells(lRow, lCol)
+End Function
+
 '
 ' Description: Returns comparable state label, especially handles those non-ASCII code included in Osiris database search results
 ' Code Date: 2024/04/14
 '
 Function ReturnStateLabel(ByVal comparableState As String) As String
-    Debug.Print "Comparable state string: " & AscW(comparableState)
     If AscW(comparableState) = Osiris_Review_Constant.UNICODE_CHECK Then
         ReturnStateLabel = Osiris_Review_Constant.CONST_COMPARABLE_STATE_TBD
     ElseIf AscW(comparableState) = Osiris_Review_Constant.UNICODE_FORBIDDEN Then
@@ -232,8 +259,32 @@ Public Function CleanMessyString(ByVal Str As String) As String
 
         End Select
     Next i
-
     CleanMessyString = CleanString
-
 End Function
 
+'
+' Description: returns column letter for a given column number
+' Source: https://stackoverflow.com/questions/12796973/function-to-convert-column-number-to-letter
+'
+Function Col_Letter(lngCol As Long) As String
+    Dim vArr
+    vArr = Split(Cells(1, lngCol).Address(True, False), "$")
+    Col_Letter = vArr(0)
+End Function
+
+'
+' Description: Scans the company column of the worksheet Osiris_Review_Constant.MASTER_SHEET, i.e. "¦Cªí (2)" or "Screening_Worksheet"
+'              to determine the number of companies
+' ToDo's: Can be stored as a global instance variable when migrating this project to a class-based implementation
+'
+Public Function FindNumberOfCompanies() As Integer
+    Dim tgtWs           As Worksheet
+    Dim selectedRange   As Range
+    Dim nc              As Integer
+    
+    Set tgtWs = Worksheets(Osiris_Review_Constant.MASTER_SHEET)
+    Set selectedRange = tgtWs.Range(Osiris_Review_Constant.CONST_BASE_RANGE)
+    nc = Osiris_Review_Gadgets.FindMaximumRow(selectedRange) - 2
+    
+    FindNumberOfCompanies = nc
+End Function
