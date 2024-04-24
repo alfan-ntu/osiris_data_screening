@@ -30,7 +30,13 @@ Attribute VB_Exposed = False
 '       - 2024/4/11, 0.1a: initial version
 '
 '   ToDo's:
-'       1)
+'       1) Generate additional worksheets, including 'Comparable_Worksheet' and 'Rejection_Worksheet'
+'          Comparable_Worksheet: includes a table containing comparable company and country of the comparable company,
+'                                and sorted alphabetically by the company column
+'          Rejection_Worksheet: includes a table containing rejected company and the reason why the companies are
+'                               rejected
+'       2) Create the working worksheet 'Screening_Worksheet' in a new raw Excel workbook generated from Osiris comparable
+'          company search
 '
 '   NOTE: Before the Screening_Worksheet is created automatically, assuming 'Screening_Worksheet' has been created and is
 '         being used as the working sheet for data screening

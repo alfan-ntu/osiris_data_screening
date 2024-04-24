@@ -1,5 +1,6 @@
 # osiris_data_screening
-Description: This is an Excel utility program developed in VBA supporting Osiris data screening, real time PLI calculation and other common functionalities.
+## General Description: 
+This is an Excel utility program developed in VBA supporting Osiris data screening, real time PLI calculation and other common functionalities.
 
 Ver. 0.1e
 
