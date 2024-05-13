@@ -223,3 +223,25 @@ Function worksheetExists(sheetName As String) As Boolean
     Next ws
 End Function
 
+'
+' Description: save the current workbook
+'              It saves the current workbook with the current file name, saves to the specified file
+'              if the optional file name is given
+' Date: 2024/5/8
+'
+Sub saveWorkbook(Optional wbName As String)
+    Dim wb As Workbook
+    
+    ' Get the reference to the active workbook
+    Set wb = ActiveWorkbook
+    
+    If wbName <> "" Then
+        ' Save the workbook with the specified file name, wbName
+        wb.SaveAs wbName
+        Debug.Print "Active workbook saved as " & wbName
+    Else
+        ' Save the workbook using its current file name and format
+        wb.Save
+        Debug.Print "Active workbook " & ThisWorkbook.Name & " updated!"
+    End If
+End Sub

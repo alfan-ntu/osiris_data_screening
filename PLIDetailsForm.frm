@@ -37,6 +37,9 @@ Attribute VB_Exposed = False
 '                               rejected
 '       2) Create the working worksheet 'Screening_Worksheet' in a new raw Excel workbook generated from Osiris comparable
 '          company search
+'       3) Go to the first unscreened company record when opening the user form, PLIDetailsForm
+'       4) Support company name search function
+'       5) Support file saving function during review process
 '
 '   NOTE: Before the Screening_Worksheet is created automatically, assuming 'Screening_Worksheet' has been created and is
 '         being used as the working sheet for data screening
@@ -49,6 +52,11 @@ Option Explicit
 ' Description: new version of ComparableReview main program which accepts PLI indicator and currow row
 '              as the argument so that traversing comparable compnay list is easier
 ' Date: 2024/4/15
+' ToDo's:
+'       1) Ensure the 'Screening_Worksheet' worksheet exists and this function is called on this 'Screening_Worksheet'
+'       2) Sanity check if the last column of this 'Screening_Worksheet' is of column 'N', i.e. R&D expense rejection
+'          and Advertisement rejection are enabled in the database query criteria
+'       3) Add a message box when being called to determine if going to the first non-screened company or not
 '
 '
 Sub comparableReview(PLI_Switch As String)
@@ -66,10 +74,18 @@ Sub comparableReview(PLI_Switch As String)
     ' Experimental modification, added vbModeless so that Showing UserForm and operating worksheet contents
     ' can be done at the same time
     Me.Show vbModeless
+    '
+    ' Test purpose only!
+    '
+    Dim wb As Workbook
+    Set wb = ActiveWorkbook
+    Debug.Print "Active workbook name is: " & wb.Name
+    
 End Sub
 
 '
-' Description: Ensure the target worksheet exists based on the selection of PLI_Switch
+' Description: Ensure the target worksheet, OM_Comparables or NCP_Comparables, exists based on the
+'              selection of PLI_Switch
 ' Coding Date: 2024/4/18
 '
 Sub ensurePLIWorksheetExists(PLI_Switch As String)
@@ -117,7 +133,9 @@ End Sub
 ' Description: presetComparableSheet() presets PLI comparable column, CONST_PLI_COMPARABLE_COLUMN, to synchronize
 '              screening results per Screening_Worksheet when the PLI comparable sheet is created
 ' Coding Date: 2024/4/19
-' ToDo's: eliminate the use of hard-coded variables, e.g. rowBase...
+' ToDo's:
+'       1. (Priority) Add country code lookup formula to fetch country code of potential comparable company
+'       2. eliminate the use of hard-coded variables, e.g. rowBase...
 '
 Sub presetComparableSheet(ByVal PLI_Switch As String)
     Dim targetWorksheetName                 As String
@@ -132,7 +150,7 @@ Sub presetComparableSheet(ByVal PLI_Switch As String)
     nc = Osiris_Review_Gadgets.FindNumberOfCompanies()
     rowBase = 3
     rowEnd = rowBase + nc - 1
-    colIndex = 13
+
     tmpString = "!$" & Osiris_Review_Constant.CONST_COMPANY_NAME_COLUMN & "$" & CStr(rowBase) & ":$" _
                 & Osiris_Review_Constant.CONST_STATUS_COLUMN & "$" & CStr(rowEnd)
     Debug.Print "Screening source range: " & tmpString
@@ -149,8 +167,16 @@ Sub presetComparableSheet(ByVal PLI_Switch As String)
     For r = 15 To lRow
         Set tmpRange = tgtWs.Cells(r, Osiris_Review_Constant.CONST_PLI_COMPANY_COLUMN)
         Debug.Print "Potential Comparable: " & tmpRange.Value
-        Set tmpRange = tgtWs.Cells(r, Osiris_Review_Constant.CONST_PLI_COMPARABLE_COLUMN)
+        
+        ' Set comparable column vlookup formula
         screeningRangeString = screeningSheet & tmpString
+        Set tmpRange = tgtWs.Cells(r, Osiris_Review_Constant.CONST_PLI_COMPARABLE_COLUMN)
+        colIndex = Asc(Osiris_Review_Constant.CONST_STATUS_COLUMN) - Asc(Osiris_Review_Constant.CONST_COMPANY_NAME_COLUMN) + 1
+        tmpRange.Formula = "= VLOOKUP(B" & CStr(r) & ", " & screeningRangeString & ", " & CStr(colIndex) & ", FALSE)"
+        
+        ' Set country code column vlookup formula
+        Set tmpRange = tgtWs.Cells(r, Osiris_Review_Constant.CONST_PLI_COUNTRY_COLUMN)
+        colIndex = Asc(Osiris_Review_Constant.CONST_COUNTRY_CODE_COLUMN) - Asc(Osiris_Review_Constant.CONST_COMPANY_NAME_COLUMN) + 1
         tmpRange.Formula = "= VLOOKUP(B" & CStr(r) & ", " & screeningRangeString & ", " & CStr(colIndex) & ", FALSE)"
     Next r
 
@@ -422,6 +448,7 @@ End Function
 ' Description: The command button OK is clicked to close the UserForm
 '
 Private Sub cbExit_Click()
+    Call Common_Utilities.saveWorkbook
     Unload Me
 End Sub
 
@@ -608,7 +635,6 @@ End Sub
 Private Sub cboxRejectionReason_Enter()
     Me.cboxRejectionReason.Text = Me.cboxRejectionReason.Value
     Debug.Print "(Enter) Rejection reason is " & Me.cboxRejectionReason.Text
-    
 End Sub
 
 

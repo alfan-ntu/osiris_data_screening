@@ -36,9 +36,13 @@ Public Const CONST_COMPANY_NAME_COLUMN          As String = "B"
 Public Const CONST_TRADE_COLUMN                 As String = "C"
 Public Const CONST_COMPANY_DESCRIPTION_COLUMN   As String = "D"
 Public Const CONST_PNS_COLUMN                   As String = "E"
+Public Const CONST_COUNTRY_CODE_COLUMN          As String = "F"
 Public Const CONST_MANUAL_REVIEW_COLUMN         As String = "M"
 Public Const CONST_STATUS_COLUMN                As String = "N"
 Public Const CONST_COMMENT_COLUMN               As String = "O"
+
+' STATUS_COLUMN_OFFSET stores the offset from CONST_COMPANY_NAME_COLUMN to the
+Public Const STATUS_COLUMN_OFFSET               As Integer = 13
 '
 ' Layout constants associated with PLI Benchmark worksheet
 ' PLI Benchmark worksheet means OM_COMPARABLE_SHEET in case of Operating Margin review,
@@ -46,20 +50,38 @@ Public Const CONST_COMMENT_COLUMN               As String = "O"
 '
 Public Const CONST_PLI_COMPANY_COLUMN           As String = "B"
 Public Const CONST_PLI_SHEET_BASE_RANGE         As String = "B15"
+'Public Const CONST_PLI_AVERAGE_COLUMN           As String = "D"
+'Public Const CONST_PLI_CY_COLUMN                As String = "E"
+'Public Const CONST_PLI_LY_COLUMN                As String = "F"
+'Public Const CONST_PLI_LLY_COLUMN               As String = "H"
+'Public Const CONST_PLI_COMPARABLE_COLUMN        As String = "I"
+'
+' Notice: Report layout changed in FY2024
+' Date: 2024/5/7
+'
 Public Const CONST_PLI_AVERAGE_COLUMN           As String = "D"
-Public Const CONST_PLI_CY_COLUMN                As String = "E"
-Public Const CONST_PLI_LY_COLUMN                As String = "F"
-Public Const CONST_PLI_LLY_COLUMN               As String = "H"
-Public Const CONST_PLI_COMPARABLE_COLUMN        As String = "I"
+Public Const CONST_PLI_CY_COLUMN                As String = "F"
+Public Const CONST_PLI_LY_COLUMN                As String = "G"
+Public Const CONST_PLI_LLY_COLUMN               As String = "I"
+Public Const CONST_PLI_COMPARABLE_COLUMN        As String = "J"
+Public Const CONST_PLI_COUNTRY_COLUMN           As String = "K"
 
 '
 ' Benchmark worksheet related layout
 '
 Public Const BMK_AVG_YEAR                       As Integer = 0
-Public Const BMK_CURRENT_YEAR                   As Integer = 1
-Public Const BMK_LAST_YEAR                      As Integer = 2
-Public Const BMK_YEAR_BEFORE_LAST_YEAR          As Integer = 4
-Public Const BMK_COMPARABLE_OFFSET              As Integer = 5
+'Public Const BMK_CURRENT_YEAR                   As Integer = 1
+'Public Const BMK_LAST_YEAR                      As Integer = 2
+'Public Const BMK_YEAR_BEFORE_LAST_YEAR          As Integer = 4
+'Public Const BMK_COMPARABLE_OFFSET              As Integer = 5
+'
+' Notice: Report layout changed in FY2024; Very annoying
+' Date: 2024/5/7
+'
+Public Const BMK_CURRENT_YEAR                   As Integer = 2
+Public Const BMK_LAST_YEAR                      As Integer = 3
+Public Const BMK_YEAR_BEFORE_LAST_YEAR          As Integer = 5
+Public Const BMK_COMPARABLE_OFFSET              As Integer = 6
 
 '
 ' UserForm related constants
