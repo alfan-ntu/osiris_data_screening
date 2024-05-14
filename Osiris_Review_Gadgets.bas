@@ -2,10 +2,12 @@ Attribute VB_Name = "Osiris_Review_Gadgets"
 '
 '   Description: A module containing Osiris data review associated gadgets
 '
-'   Date: 2024/4/23
+'   Date: 2024/5/14
 '   Author: maoyi.fan@yapro.com.tw
-'   Ver.: 0.1e
+'   Ver.: 0.1f
 '   Revision History:
+'       - 2024/5/14, 0.1f: Created Screening_Worksheet and populate comparable state formula, country code... in
+'                          PLI Screening Worksheet
 '       - 2024/4/23, 0.1e: Added gadgets to find range of selected area
 '       - 2024/4/16, 0.1c: Added function DoComparableQuartile() to calculate quartile numbers
 '                          of comparable companies and other minor fixes
@@ -45,6 +47,43 @@ Type Validated_Range
     srcRangeStr         As String
     valid               As Boolean
 End Type
+
+'
+' Description: Country code dictionary
+'
+Public countryCodeDict As New Scripting.Dictionary
+
+
+'
+' Description: setup the country code dictionary
+' Coding Date: 2024/5/14
+'
+Sub setupCountryCodeDictionary()
+    countryCodeDict.Add Key:="TW", Item:="台灣"
+    countryCodeDict.Add Key:="CN", Item:="中國"
+    countryCodeDict.Add Key:="IN", Item:="印度"
+    countryCodeDict.Add Key:="TH", Item:="泰國"
+    countryCodeDict.Add Key:="HK", Item:="香港"
+    countryCodeDict.Add Key:="JP", Item:="日本"
+    countryCodeDict.Add Key:="ID", Item:="印尼"
+    countryCodeDict.Add Key:="AU", Item:="澳大利亞"
+    countryCodeDict.Add Key:="KR", Item:="韓國"
+    countryCodeDict.Add Key:="VN", Item:="越南"
+    countryCodeDict.Add Key:="MY", Item:="馬來西亞"
+    countryCodeDict.Add Key:="SG", Item:="新加玻"
+    countryCodeDict.Add Key:="NZ", Item:="紐西蘭"
+    ' Debug.Print "Country code list of size " & countryCodeDict.Count & " is created!"
+End Sub
+
+
+'
+' Description: Look up country name in Chinese for country ISO Code using Scripting.Dictionary
+' Coding Date: 2024/5/14
+'
+Function findCountryNameInChinese(ByVal cntyISOCode As String) As String
+    findCountryNameInChinese = Osiris_Review_Gadgets.countryCodeDict(cntyISOCode)
+End Function
+
 
 '
 ' Description: Exercise DoComparableQuartile subroutine

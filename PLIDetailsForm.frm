@@ -16,10 +16,12 @@ Attribute VB_Exposed = False
 '
 '   Description: A UserForm supporting Osiris result screening; Primary progam dealing with Osiris data screening
 '
-'   Date: 2024/4/23
+'   Date: 2024/5/14
 '   Author: maoyi.fan@yapro.com.tw
-'   Ver.: 0.1e
+'   Ver.: 0.1f
 '   Revision History:
+'       - 2024/5/14, 0.1f: Created Screening_Worksheet and populate comparable state formula, country code... in
+'                          PLI Screening Worksheet
 '       - 2024/4/23, 0.1e: Presets Comparable worksheet to support PLI calculation based on comparable flag
 '                          vlookup formula;
 '                          Update UserFrame with PLI updates
@@ -35,11 +37,8 @@ Attribute VB_Exposed = False
 '                                and sorted alphabetically by the company column
 '          Rejection_Worksheet: includes a table containing rejected company and the reason why the companies are
 '                               rejected
-'       2) Create the working worksheet 'Screening_Worksheet' in a new raw Excel workbook generated from Osiris comparable
-'          company search
-'       3) Go to the first unscreened company record when opening the user form, PLIDetailsForm
-'       4) Support company name search function
-'       5) Support file saving function during review process
+'       2) Go to the first unscreened company record when opening the user form, PLIDetailsForm
+'       3) Support company name search function
 '
 '   NOTE: Before the Screening_Worksheet is created automatically, assuming 'Screening_Worksheet' has been created and is
 '         being used as the working sheet for data screening
@@ -62,9 +61,13 @@ Option Explicit
 Sub comparableReview(PLI_Switch As String)
     Dim currentRow          As Long
     
+    '
+    ' Ensure the Screening_Worksheet exists
+    '
+    Call ensureScreeningWorksheetExists
+    
     currentRow = ActiveCell.Row
     Call ensurePLIWorksheetExists(PLI_Switch)
-    
     '
     ' Get the company name of the current row and pass it to comparableReviewByRow
     '
@@ -74,13 +77,28 @@ Sub comparableReview(PLI_Switch As String)
     ' Experimental modification, added vbModeless so that Showing UserForm and operating worksheet contents
     ' can be done at the same time
     Me.Show vbModeless
-    '
-    ' Test purpose only!
-    '
-    Dim wb As Workbook
-    Set wb = ActiveWorkbook
-    Debug.Print "Active workbook name is: " & wb.Name
     
+End Sub
+'
+' Description: Enxure the Screening_Worksheet exists by copying Osiris_Review_Constant.MASTER_SHEET, ¦Cªí (2),
+'              if it doesn't and set the the first record as the selected target
+' Coding Date: 2024/5/13
+'
+Sub ensureScreeningWorksheetExists()
+    Dim worksheetIndex      As Integer
+    Dim baseRange           As Range
+    
+    If Common_Utilities.worksheetExists(Osiris_Review_Constant.SCREENING_SHEET) Then
+        Debug.Print "Screening worksheet, " & Osiris_Review_Constant.SCREENING_SHEET & " exists!"
+    Else
+        ' Create the Screening worksheet by copying ¦Cªí (2) and placing it right after ¦Cªí (2)
+        Sheets(Osiris_Review_Constant.MASTER_SHEET).Copy After:=Sheets(Osiris_Review_Constant.MASTER_SHEET)
+        worksheetIndex = Sheets(Osiris_Review_Constant.MASTER_SHEET).Index
+        Sheets(worksheetIndex + 1).Name = Osiris_Review_Constant.SCREENING_SHEET
+        Debug.Print "Screening worksheet, " & Osiris_Review_Constant.SCREENING_SHEET & " created!"
+        Set baseRange = Sheets(Osiris_Review_Constant.SCREENING_SHEET).Range(Osiris_Review_Constant.CONST_BASE_RANGE)
+        baseRange.Select
+    End If
 End Sub
 
 '
@@ -103,24 +121,22 @@ Sub ensurePLIWorksheetExists(PLI_Switch As String)
             Debug.Print "Target worksheet: " & Osiris_Review_Constant.OM_COMPARABLE_SHEET & " for Operating Margin review exists!"
         Else
             ' Create the missing Operation Margin review worksheet
-            'Debug.Print "Target worksheet: " & Osiris_Review_Constant.OM_COMPARABLE_SHEET & " does not exist!"
             Sheets(Osiris_Review_Constant.OM_DETAILS_SHEET).Copy After:=Sheets(Osiris_Review_Constant.OM_DETAILS_SHEET)
             worksheetIndex = Sheets(Osiris_Review_Constant.OM_DETAILS_SHEET).Index
             Sheets(worksheetIndex + 1).Name = Osiris_Review_Constant.OM_COMPARABLE_SHEET
             'Debug.Print "Newly created worksheet name: " & Sheets(worksheetIndex + 1).Name
-            presetComparableSheet (Osiris_Review_Constant.CONST_OM_PLI)
+            presetPLIWorksheet (Osiris_Review_Constant.CONST_OM_PLI)
         End If
     ElseIf PLI_Switch = Osiris_Review_Constant.CONST_NCP_PLI Then
         If Common_Utilities.worksheetExists(Osiris_Review_Constant.NCP_COMPARABLE_SHEET) Then
             Debug.Print "Target worksheet: " & Osiris_Review_Constant.NCP_COMPARABLE_SHEET & " for Net Cost Plus review exists!"
         Else
             ' Create the missing Net Cost Plus review worksheet
-            'Debug.Print "Target worksheet: " & Osiris_Review_Constant.NCP_COMPARABLE_SHEET & " does not exist!"
             Sheets(Osiris_Review_Constant.NCP_DETAILS_SHEET).Copy After:=Sheets(Osiris_Review_Constant.NCP_DETAILS_SHEET)
             worksheetIndex = Sheets(Osiris_Review_Constant.NCP_DETAILS_SHEET).Index
             Sheets(worksheetIndex + 1).Name = Osiris_Review_Constant.NCP_COMPARABLE_SHEET
             'Debug.Print "Newly created worksheet name: " & Sheets(worksheetIndex + 1).Name
-            presetComparableSheet (Osiris_Review_Constant.CONST_NCP_PLI)
+            presetPLIWorksheet (Osiris_Review_Constant.CONST_NCP_PLI)
         End If
     End If
     ' Restore original selected cell
@@ -130,14 +146,14 @@ Sub ensurePLIWorksheetExists(PLI_Switch As String)
 End Sub
 
 '
-' Description: presetComparableSheet() presets PLI comparable column, CONST_PLI_COMPARABLE_COLUMN, to synchronize
+' Description: presetPLIWorksheet() presets PLI comparable column, CONST_PLI_COMPARABLE_COLUMN, to synchronize
 '              screening results per Screening_Worksheet when the PLI comparable sheet is created
 ' Coding Date: 2024/4/19
 ' ToDo's:
 '       1. (Priority) Add country code lookup formula to fetch country code of potential comparable company
 '       2. eliminate the use of hard-coded variables, e.g. rowBase...
 '
-Sub presetComparableSheet(ByVal PLI_Switch As String)
+Sub presetPLIWorksheet(ByVal PLI_Switch As String)
     Dim targetWorksheetName                 As String
     Dim tgtWs                               As Worksheet
     Dim selectedRange, tmpRange             As Range
@@ -145,6 +161,10 @@ Sub presetComparableSheet(ByVal PLI_Switch As String)
     Dim screeningSheet                      As String
     Dim screeningRangeString, tmpString     As String
     Dim nc, rowBase, rowEnd, colIndex       As Integer
+    Dim countryINChinese                    As String
+    
+    ' setup country code dictionary
+    Call setupCountryCodeDictionary
     
     screeningSheet = Osiris_Review_Constant.SCREENING_SHEET
     nc = Osiris_Review_Gadgets.FindNumberOfCompanies()
@@ -155,9 +175,11 @@ Sub presetComparableSheet(ByVal PLI_Switch As String)
                 & Osiris_Review_Constant.CONST_STATUS_COLUMN & "$" & CStr(rowEnd)
     Debug.Print "Screening source range: " & tmpString
     
-    If PLI_Switch = Osiris_Review_Constant.CONST_OM_PLI Then   ' OM Review
+    If PLI_Switch = Osiris_Review_Constant.CONST_OM_PLI Then
+        ' OM Review
         targetWorksheetName = Osiris_Review_Constant.OM_COMPARABLE_SHEET
-    Else  'NCP Review
+    Else
+        'NCP Review
         targetWorksheetName = Osiris_Review_Constant.NCP_COMPARABLE_SHEET
     End If
     Set tgtWs = Worksheets(targetWorksheetName)
@@ -165,9 +187,6 @@ Sub presetComparableSheet(ByVal PLI_Switch As String)
     
     lRow = Osiris_Review_Gadgets.FindMaximumRow(selectedRange)
     For r = 15 To lRow
-        Set tmpRange = tgtWs.Cells(r, Osiris_Review_Constant.CONST_PLI_COMPANY_COLUMN)
-        Debug.Print "Potential Comparable: " & tmpRange.Value
-        
         ' Set comparable column vlookup formula
         screeningRangeString = screeningSheet & tmpString
         Set tmpRange = tgtWs.Cells(r, Osiris_Review_Constant.CONST_PLI_COMPARABLE_COLUMN)
@@ -175,12 +194,23 @@ Sub presetComparableSheet(ByVal PLI_Switch As String)
         tmpRange.Formula = "= VLOOKUP(B" & CStr(r) & ", " & screeningRangeString & ", " & CStr(colIndex) & ", FALSE)"
         
         ' Set country code column vlookup formula
+        Set tmpRange = Nothing
         Set tmpRange = tgtWs.Cells(r, Osiris_Review_Constant.CONST_PLI_COUNTRY_COLUMN)
         colIndex = Asc(Osiris_Review_Constant.CONST_COUNTRY_CODE_COLUMN) - Asc(Osiris_Review_Constant.CONST_COMPANY_NAME_COLUMN) + 1
         tmpRange.Formula = "= VLOOKUP(B" & CStr(r) & ", " & screeningRangeString & ", " & CStr(colIndex) & ", FALSE)"
+        countryINChinese = Osiris_Review_Gadgets.countryCodeDict(tmpRange.Value)
+        tmpRange.ClearContents
+        tmpRange.Value = countryINChinese
+        
+        ' Convert company names in all capital letter case to proper case
+        Set tmpRange = Nothing
+        Set tmpRange = tgtWs.Cells(r, Osiris_Review_Constant.CONST_PLI_COMPANY_PROPER_COLUMN)
+        tmpRange.Formula = "= PROPER(B" & CStr(r) & ")"
+        
     Next r
 
 End Sub
+
 
 '
 ' Description: Break down the company information display and review

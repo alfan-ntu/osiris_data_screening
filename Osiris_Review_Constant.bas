@@ -19,9 +19,9 @@ Attribute VB_Name = "Osiris_Review_Constant"
 Public Const CONST_OM_PLI                       As String = "Operating Margin"
 Public Const CONST_NCP_PLI                      As String = "Net Cost Plus"
 Public Const OM_DETAILS_SHEET                   As String = "Benchmark 1"
-Public Const OM_COMPARABLE_SHEET                As String = "OM_Comparables"
+Public Const OM_COMPARABLE_SHEET                As String = "OM_Screening"
 Public Const NCP_DETAILS_SHEET                  As String = "Benchmark 4"
-Public Const NCP_COMPARABLE_SHEET               As String = "NCP_Comparables"
+Public Const NCP_COMPARABLE_SHEET               As String = "NCP_Screening"
 Public Const CONST_OM_PLI_LABEL                 As String = "營業淨利率"
 Public Const CONST_NCP_PLI_LABEL                As String = "成本及營業費用淨利率"
 ' SCREENINT_SHEET is actually a worksheet replicating
@@ -65,6 +65,7 @@ Public Const CONST_PLI_LY_COLUMN                As String = "G"
 Public Const CONST_PLI_LLY_COLUMN               As String = "I"
 Public Const CONST_PLI_COMPARABLE_COLUMN        As String = "J"
 Public Const CONST_PLI_COUNTRY_COLUMN           As String = "K"
+Public Const CONST_PLI_COMPANY_PROPER_COLUMN    As String = "L"
 
 '
 ' Benchmark worksheet related layout
