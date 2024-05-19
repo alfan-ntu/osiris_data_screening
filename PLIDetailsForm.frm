@@ -50,22 +50,27 @@ Option Explicit
 '
 ' Description: new version of ComparableReview main program which accepts PLI indicator and currow row
 '              as the argument so that traversing comparable compnay list is easier
-' Date: 2024/4/15
+' Date: 2024/5/19
 ' ToDo's:
 '       1) Ensure the 'Screening_Worksheet' worksheet exists and this function is called on this 'Screening_Worksheet'
 '       2) Sanity check if the last column of this 'Screening_Worksheet' is of column 'N', i.e. R&D expense rejection
 '          and Advertisement rejection are enabled in the database query criteria
-'       3) Add a message box when being called to determine if going to the first non-screened company or not
-'
 '
 Sub comparableReview(PLI_Switch As String)
     Dim currentRow          As Long
-    
+    Dim unscreenedRow       As Long
+    Dim userChoice          As VbMsgBoxResult
     '
     ' Ensure the Screening_Worksheet exists
     '
     Call ensureScreeningWorksheetExists
     
+    userChoice = MsgBox("是否要從第一筆未過濾資料開始?", vbYesNo + vbQuestion, "User Choice")
+    If userChoice = vbYes Then
+        unscreenedRow = Osiris_Review_Gadgets.findFirstUnscreenRecord()
+        Cells(unscreenedRow, 1).Select
+    End If
+   
     currentRow = ActiveCell.Row
     Call ensurePLIWorksheetExists(PLI_Switch)
     '
@@ -80,7 +85,7 @@ Sub comparableReview(PLI_Switch As String)
     
 End Sub
 '
-' Description: Enxure the Screening_Worksheet exists by copying Osiris_Review_Constant.MASTER_SHEET, 列表 (2),
+' Description: Ensure the Screening_Worksheet exists by copying Osiris_Review_Constant.MASTER_SHEET, 列表 (2),
 '              if it doesn't and set the the first record as the selected target
 ' Coding Date: 2024/5/13
 '

@@ -96,8 +96,8 @@ Public Const UNICODE_CHECK                      As Integer = 10004
 Public Const UNICODE_FORBIDDEN                  As Integer = 8856
 
 Public Const RR_SIG_DIFF                        As String = "Significantly different activities or products"
-Public Const RR_BIG_RD_EXPENSE                  As String = "Consolidated and Unconsolidated Research And Development Expense / Total Net Sales is greater than or equal to 0.01"
-Public Const RR_BIG_MARKETING_EXPENSE           As String = "Consolidated and Unconsolidated Advertising Expense / Total Net Sales is greater than or equal to 0.01"
+Public Const RR_BIG_RD_EXPENSE                  As String = "Consolidated and Unconsolidated Research And Development Expense / Total Net Sales is greater than or equal to 0.1%"
+Public Const RR_BIG_MARKETING_EXPENSE           As String = "Consolidated and Unconsolidated Advertising Expense / Total Net Sales is greater than or equal to 0.1%"
 Public Const RR_MISSING_DATA                    As String = "Missing Financial Data"
 Public Const RR_OTHERS                          As String = "Others"
 Public Const RR_BLANK                           As String = ""

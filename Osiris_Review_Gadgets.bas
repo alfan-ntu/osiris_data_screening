@@ -253,6 +253,7 @@ End Function
 ' Code Date: 2024/04/14
 '
 Function ReturnStateLabel(ByVal comparableState As String) As String
+    ' return comparable state code according to the non-ASCII code selected by Osiris database
     If AscW(comparableState) = Osiris_Review_Constant.UNICODE_CHECK Then
         ReturnStateLabel = Osiris_Review_Constant.CONST_COMPARABLE_STATE_TBD
     ElseIf AscW(comparableState) = Osiris_Review_Constant.UNICODE_FORBIDDEN Then
@@ -326,4 +327,35 @@ Public Function FindNumberOfCompanies() As Integer
     nc = Osiris_Review_Gadgets.FindMaximumRow(selectedRange) - 2
     
     FindNumberOfCompanies = nc
+    
+End Function
+
+'
+' Description: Locate the first unscreened company record
+' Coding Date: 2024/5/18
+'
+Public Function findFirstUnscreenRecord() As Long
+    Dim tgtWs           As Worksheet
+    Dim lRow, r         As Long
+    Dim compStat        As Range
+    Dim wsName          As String
+    Const firstDataRow  As Long = 3
+    
+    r = firstDataRow
+    Set tgtWs = Worksheets(Osiris_Review_Constant.SCREENING_SHEET)
+    Set compStat = tgtWs.Range(Osiris_Review_Constant.CONST_STATUS_COLUMN & CStr(r))
+    
+    lRow = Osiris_Review_Gadgets.FindMaximumRow(compStat)
+    wsName = compStat.Worksheet.Name
+    
+    For r = firstDataRow To lRow
+        Set compStat = tgtWs.Range(Osiris_Review_Constant.CONST_STATUS_COLUMN & CStr(r))
+        If AscW(compStat.Value) = Osiris_Review_Constant.UNICODE_CHECK Then
+            Debug.Print "Unscreened record: " & CStr(r)
+            Exit For
+        End If
+    Next r
+    Set compStat = Nothing
+    Set tgtWs = Nothing
+    findFirstUnscreenRecord = r
 End Function
