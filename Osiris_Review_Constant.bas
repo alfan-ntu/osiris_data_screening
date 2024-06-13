@@ -66,6 +66,7 @@ Public Const CONST_PLI_LLY_COLUMN               As String = "I"
 Public Const CONST_PLI_COMPARABLE_COLUMN        As String = "J"
 Public Const CONST_PLI_COUNTRY_COLUMN           As String = "K"
 Public Const CONST_PLI_COMPANY_PROPER_COLUMN    As String = "L"
+Public Const CONST_PLI_REJECTION_REASON_COLUMN  As String = "M"
 
 '
 ' Benchmark worksheet related layout
@@ -99,6 +100,7 @@ Public Const RR_SIG_DIFF                        As String = "Significantly diffe
 Public Const RR_BIG_RD_EXPENSE                  As String = "Consolidated and Unconsolidated Research And Development Expense / Total Net Sales is greater than or equal to 0.1%"
 Public Const RR_BIG_MARKETING_EXPENSE           As String = "Consolidated and Unconsolidated Advertising Expense / Total Net Sales is greater than or equal to 0.1%"
 Public Const RR_MISSING_DATA                    As String = "Missing Financial Data"
+Public Const RR_THREE_YEAR_LOSS                 As String = "Operating income loss for 3 years"
 Public Const RR_OTHERS                          As String = "Others"
 Public Const RR_BLANK                           As String = ""
 

@@ -16,10 +16,11 @@ Attribute VB_Exposed = False
 '
 '   Description: A UserForm supporting Osiris result screening; Primary progam dealing with Osiris data screening
 '
-'   Date: 2024/5/14
+'   Date: 2024/6/13
 '   Author: maoyi.fan@yapro.com.tw
-'   Ver.: 0.1f
+'   Ver.: 0.1g
 '   Revision History:
+'       - 2024/6/13, 0.1g: Fixed the issue jumping to the first unscreened record when all records have been screened
 '       - 2024/5/14, 0.1f: Created Screening_Worksheet and populate comparable state formula, country code... in
 '                          PLI Screening Worksheet
 '       - 2024/4/23, 0.1e: Presets Comparable worksheet to support PLI calculation based on comparable flag
@@ -50,27 +51,36 @@ Option Explicit
 '
 ' Description: new version of ComparableReview main program which accepts PLI indicator and currow row
 '              as the argument so that traversing comparable compnay list is easier
-' Date: 2024/5/19
+' Date: 2024/6/13
 ' ToDo's:
-'       1) Ensure the 'Screening_Worksheet' worksheet exists and this function is called on this 'Screening_Worksheet'
-'       2) Sanity check if the last column of this 'Screening_Worksheet' is of column 'N', i.e. R&D expense rejection
+'       1) Sanity check if the last column of this 'Screening_Worksheet' is of column 'N', i.e. R&D expense rejection
 '          and Advertisement rejection are enabled in the database query criteria
 '
 Sub comparableReview(PLI_Switch As String)
     Dim currentRow          As Long
     Dim unscreenedRow       As Long
+    Dim currentSheetName    As String
     Dim userChoice          As VbMsgBoxResult
     '
     ' Ensure the Screening_Worksheet exists
     '
     Call ensureScreeningWorksheetExists
+    '
+    ' Ensure the operation screen is 'Osiris_Review_Constant.SCREENING_SHEET', i.e. Screening_Worksheet
+    '
+    currentSheetName = ActiveSheet.Name
+    If currentSheetName <> Osiris_Review_Constant.SCREENING_SHEET Then
+        userChoice = MsgBox("請確定在Screeing_Worksheet工作頁上操作!", vbOKOnly)
+        End
+    End If
     
-    userChoice = MsgBox("是否要從第一筆未過濾資料開始?", vbYesNo + vbQuestion, "User Choice")
+    userChoice = MsgBox("從第一筆未過濾資料開始?", vbYesNo + vbQuestion, "選取過濾資料")
     If userChoice = vbYes Then
         unscreenedRow = Osiris_Review_Gadgets.findFirstUnscreenRecord()
-        Cells(unscreenedRow, 1).Select
+        If unscreenedRow <> 0 Then ' Skip jumping to the first unscreened row
+            Cells(unscreenedRow, 1).Select
+        End If
     End If
-   
     currentRow = ActiveCell.Row
     Call ensurePLIWorksheetExists(PLI_Switch)
     '
@@ -81,6 +91,8 @@ Sub comparableReview(PLI_Switch As String)
     Call comparableReviewByRow(PLI_Switch, currentRow)
     ' Experimental modification, added vbModeless so that Showing UserForm and operating worksheet contents
     ' can be done at the same time
+    ' NOTE: This statement is risky actually. It breaks the operation logic when users move or select other cells in
+    '       worksheets or workbooks
     Me.Show vbModeless
     
 End Sub
@@ -153,10 +165,9 @@ End Sub
 '
 ' Description: presetPLIWorksheet() presets PLI comparable column, CONST_PLI_COMPARABLE_COLUMN, to synchronize
 '              screening results per Screening_Worksheet when the PLI comparable sheet is created
-' Coding Date: 2024/4/19
+' Coding Date: 2024/5/21
 ' ToDo's:
-'       1. (Priority) Add country code lookup formula to fetch country code of potential comparable company
-'       2. eliminate the use of hard-coded variables, e.g. rowBase...
+'       1. eliminate the use of hard-coded variables, e.g. rowBase...
 '
 Sub presetPLIWorksheet(ByVal PLI_Switch As String)
     Dim targetWorksheetName                 As String
@@ -169,7 +180,7 @@ Sub presetPLIWorksheet(ByVal PLI_Switch As String)
     Dim countryINChinese                    As String
     
     ' setup country code dictionary
-    Call setupCountryCodeDictionary
+    Call Osiris_Review_Gadgets.setupCountryCodeDictionary
     
     screeningSheet = Osiris_Review_Constant.SCREENING_SHEET
     nc = Osiris_Review_Gadgets.FindNumberOfCompanies()
@@ -211,6 +222,12 @@ Sub presetPLIWorksheet(ByVal PLI_Switch As String)
         Set tmpRange = Nothing
         Set tmpRange = tgtWs.Cells(r, Osiris_Review_Constant.CONST_PLI_COMPANY_PROPER_COLUMN)
         tmpRange.Formula = "= PROPER(B" & CStr(r) & ")"
+        
+        ' Add rejection reason vlookup formula
+        Set tmpRange = Nothing
+        Set tmpRange = tgtWs.Cells(r, Osiris_Review_Constant.CONST_PLI_REJECTION_REASON_COLUMN)
+        colIndex = Asc(Osiris_Review_Constant.CONST_MANUAL_REVIEW_COLUMN) - Asc(Osiris_Review_Constant.CONST_COMPANY_NAME_COLUMN) + 1
+        tmpRange.Formula = "= VLOOKUP(B" & CStr(r) & ", " & screeningRangeString & ", " & CStr(colIndex) & ", FALSE)"
         
     Next r
 
@@ -689,6 +706,7 @@ Private Sub populateComboBoxList()
         .AddItem Osiris_Review_Constant.RR_BIG_MARKETING_EXPENSE
         .AddItem Osiris_Review_Constant.RR_BIG_RD_EXPENSE
         .AddItem Osiris_Review_Constant.RR_MISSING_DATA
+        .AddItem Osiris_Review_Constant.RR_THREE_YEAR_LOSS
         .AddItem Osiris_Review_Constant.RR_OTHERS
     End With
 End Sub

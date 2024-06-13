@@ -2,10 +2,11 @@ Attribute VB_Name = "Osiris_Review_Gadgets"
 '
 '   Description: A module containing Osiris data review associated gadgets
 '
-'   Date: 2024/5/14
+'   Date: 2024/6/13
 '   Author: maoyi.fan@yapro.com.tw
-'   Ver.: 0.1f
+'   Ver.: 0.1g
 '   Revision History:
+'       - 2024/6/13, 0.1g: Fixed the issue jumping to the first unscreened record when all records have been screened
 '       - 2024/5/14, 0.1f: Created Screening_Worksheet and populate comparable state formula, country code... in
 '                          PLI Screening Worksheet
 '       - 2024/4/23, 0.1e: Added gadgets to find range of selected area
@@ -332,7 +333,8 @@ End Function
 
 '
 ' Description: Locate the first unscreened company record
-' Coding Date: 2024/5/18
+' Coding Date: 2024/6/13
+'   2024/6/13: fixed check out of bound issue when all records are all screened
 '
 Public Function findFirstUnscreenRecord() As Long
     Dim tgtWs           As Worksheet
@@ -340,10 +342,12 @@ Public Function findFirstUnscreenRecord() As Long
     Dim compStat        As Range
     Dim wsName          As String
     Const firstDataRow  As Long = 3
+    Dim firstRecordFound As Boolean
     
     r = firstDataRow
     Set tgtWs = Worksheets(Osiris_Review_Constant.SCREENING_SHEET)
     Set compStat = tgtWs.Range(Osiris_Review_Constant.CONST_STATUS_COLUMN & CStr(r))
+    firstRecordFound = False
     
     lRow = Osiris_Review_Gadgets.FindMaximumRow(compStat)
     wsName = compStat.Worksheet.Name
@@ -351,10 +355,14 @@ Public Function findFirstUnscreenRecord() As Long
     For r = firstDataRow To lRow
         Set compStat = tgtWs.Range(Osiris_Review_Constant.CONST_STATUS_COLUMN & CStr(r))
         If AscW(compStat.Value) = Osiris_Review_Constant.UNICODE_CHECK Then
+            firstRecordFound = True
             Debug.Print "Unscreened record: " & CStr(r)
             Exit For
         End If
     Next r
+    If firstRecordFound = False Then
+        r = 0
+    End If
     Set compStat = Nothing
     Set tgtWs = Nothing
     findFirstUnscreenRecord = r
