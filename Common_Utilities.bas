@@ -3,10 +3,11 @@ Attribute VB_Name = "Common_Utilities"
 '   Description: A group of funtion utilities or gadgets common to all Excel workbooks, primarily
 '                to support data screening of Osiris comparable company results
 '
-'   Date: 2024/4/23
+'   Date: 2024/6/15
 '   Author: maoyi.fan@yapro.com.tw
-'   Ver.: 0.1e
+'   Ver.: 0.1h
 '   Revision History:
+'       - 2024/6/15, 0.1h: Adjusted constant arrangement to accommodate dual operation conditions
 '       - 2024/4/15, 0.1c: Moved Osiris data screening stuffs to PLIDetailsForm to make this Common_Utilities
 '                          as general as possible
 '       - 2024/4/12, 0.1b: Add NCP support by abstracting the data search and display by PLI
@@ -29,7 +30,7 @@ Attribute VB_Name = "Common_Utilities"
 '                                           Net Cost Plus financial data of the company in the selected cell
 '
 '   ToDo's:
-'       1)
+'       1) Take user's input to determine if the data screening is of single rejection or dual rejection reasons
 '
 Option Explicit
 '
@@ -48,6 +49,10 @@ Public newlyCreated As Boolean
 ' Code Date: 2024/4/12
 '
 Sub CompanyNCPDetails()
+    ' Test code: 2024/6/14
+    Osiris_Review_Constant.configOpParam (Osiris_Review_Constant.SINGLE_EXCLUSION_CRITERIA)
+    Debug.Print "Param1: " & Osiris_Review_Constant.OP_PARAM1 & " Param2: " & Str(Osiris_Review_Constant.OP_PARAM2)
+    
     PLIDetailsForm.comparableReview (CONST_NCP_PLI)
 End Sub
 
@@ -57,6 +62,10 @@ End Sub
 ' Code Date: 2024/4/11
 '
 Sub CompanyOMDetails()
+    ' Test code: 2024/6/14
+    Osiris_Review_Constant.configOpParam (Osiris_Review_Constant.DUAL_EXCLUSION_CRITERIA)
+    Debug.Print "Param1: " & Osiris_Review_Constant.OP_PARAM1 & " Param2: " & Str(Osiris_Review_Constant.OP_PARAM2)
+    
     PLIDetailsForm.comparableReview (CONST_OM_PLI)
 End Sub
 

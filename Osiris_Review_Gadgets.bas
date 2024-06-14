@@ -2,10 +2,11 @@ Attribute VB_Name = "Osiris_Review_Gadgets"
 '
 '   Description: A module containing Osiris data review associated gadgets
 '
-'   Date: 2024/6/13
+'   Date: 2024/6/15
 '   Author: maoyi.fan@yapro.com.tw
-'   Ver.: 0.1g
+'   Ver.: 0.1h
 '   Revision History:
+'       - 2024/6/15, 0.1h: Adjusted constant arrangement to accommodate dual operation conditions
 '       - 2024/6/13, 0.1g: Fixed the issue jumping to the first unscreened record when all records have been screened
 '       - 2024/5/14, 0.1f: Created Screening_Worksheet and populate comparable state formula, country code... in
 '                          PLI Screening Worksheet
@@ -185,7 +186,7 @@ Function ScreenStatistics(ByVal screenWorksheet As Worksheet) As Screening_Stati
     Dim selectedRange As Range
     Dim lRow, r As Long
     
-    Set selectedRange = screenWorksheet.Range(Osiris_Review_Constant.CONST_BASE_RANGE)
+    Set selectedRange = screenWorksheet.Range(Osiris_Review_Constant.SCREENING_WORKSHEET_BASE_RANGE)
     lRow = FindMaximumRow(selectedRange)
     ' Debug.Print "Maximum number of rows I found: " & lRow
     
@@ -197,7 +198,7 @@ Function ScreenStatistics(ByVal screenWorksheet As Worksheet) As Screening_Stati
         .totalCount = 0
     End With
     For r = 3 To lRow
-        Set selectedRange = screenWorksheet.Cells(r, Osiris_Review_Constant.CONST_STATUS_COLUMN)
+        Set selectedRange = screenWorksheet.Cells(r, Osiris_Review_Constant.SCREENING_WORKSHEET_STATUS_COLUMN)
         If selectedRange.Value = Osiris_Review_Constant.CONST_COMPARABLE_STATE_CONDITION Then
             ss.conditionCount = ss.conditionCount + 1
         ElseIf selectedRange.Value = Osiris_Review_Constant.CONST_COMPARABLE_STATE_NG Then
@@ -324,7 +325,7 @@ Public Function FindNumberOfCompanies() As Integer
     Dim nc              As Integer
     
     Set tgtWs = Worksheets(Osiris_Review_Constant.MASTER_SHEET)
-    Set selectedRange = tgtWs.Range(Osiris_Review_Constant.CONST_BASE_RANGE)
+    Set selectedRange = tgtWs.Range(Osiris_Review_Constant.SCREENING_WORKSHEET_BASE_RANGE)
     nc = Osiris_Review_Gadgets.FindMaximumRow(selectedRange) - 2
     
     FindNumberOfCompanies = nc
@@ -346,14 +347,14 @@ Public Function findFirstUnscreenRecord() As Long
     
     r = firstDataRow
     Set tgtWs = Worksheets(Osiris_Review_Constant.SCREENING_SHEET)
-    Set compStat = tgtWs.Range(Osiris_Review_Constant.CONST_STATUS_COLUMN & CStr(r))
+    Set compStat = tgtWs.Range(Osiris_Review_Constant.SCREENING_WORKSHEET_STATUS_COLUMN & CStr(r))
     firstRecordFound = False
     
     lRow = Osiris_Review_Gadgets.FindMaximumRow(compStat)
     wsName = compStat.Worksheet.Name
     
     For r = firstDataRow To lRow
-        Set compStat = tgtWs.Range(Osiris_Review_Constant.CONST_STATUS_COLUMN & CStr(r))
+        Set compStat = tgtWs.Range(Osiris_Review_Constant.SCREENING_WORKSHEET_STATUS_COLUMN & CStr(r))
         If AscW(compStat.Value) = Osiris_Review_Constant.UNICODE_CHECK Then
             firstRecordFound = True
             Debug.Print "Unscreened record: " & CStr(r)

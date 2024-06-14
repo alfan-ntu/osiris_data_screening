@@ -45,4 +45,9 @@ Sub Workbook_Open()
     
     ' Assign the shortcut key Ctrl-Shift-N to the subroutine Sub CompanyNCPDetails in Common_Utilities
     Application.OnKey "+^{N}", "CompanyNCPDetails"
+    
+    ' Assign the shortcut key Ctrl-Shift-T to the subroutine Sub configOpParam in Osisris_Review_Constant module
+    ' Newly added test code
+    ' Application.OnKey "+^{T}", "Osiris_Review_Constant.configOpParam"
+    
 End Sub

@@ -1,6 +1,6 @@
 VERSION 5.00
 Begin {C62A69F0-16DC-11CE-9E98-00AA00574A4F} PLIDetailsForm 
-   Caption         =   "Osiris 可比較公司篩選工具"
+   Caption         =   "Osiris 可比較公司篩選工具 (雅博會計師事務所)"
    ClientHeight    =   10092
    ClientLeft      =   108
    ClientTop       =   456
@@ -16,10 +16,11 @@ Attribute VB_Exposed = False
 '
 '   Description: A UserForm supporting Osiris result screening; Primary progam dealing with Osiris data screening
 '
-'   Date: 2024/6/13
+'   Date: 2024/6/15
 '   Author: maoyi.fan@yapro.com.tw
-'   Ver.: 0.1g
+'   Ver.: 0.1h
 '   Revision History:
+'       - 2024/6/15, 0.1h: Adjusted constant arrangement to accommodate dual operation conditions
 '       - 2024/6/13, 0.1g: Fixed the issue jumping to the first unscreened record when all records have been screened
 '       - 2024/5/14, 0.1f: Created Screening_Worksheet and populate comparable state formula, country code... in
 '                          PLI Screening Worksheet
@@ -109,11 +110,12 @@ Sub ensureScreeningWorksheetExists()
         Debug.Print "Screening worksheet, " & Osiris_Review_Constant.SCREENING_SHEET & " exists!"
     Else
         ' Create the Screening worksheet by copying 列表 (2) and placing it right after 列表 (2)
+        ' if Screening_Worksheet does not exist
         Sheets(Osiris_Review_Constant.MASTER_SHEET).Copy After:=Sheets(Osiris_Review_Constant.MASTER_SHEET)
         worksheetIndex = Sheets(Osiris_Review_Constant.MASTER_SHEET).Index
         Sheets(worksheetIndex + 1).Name = Osiris_Review_Constant.SCREENING_SHEET
         Debug.Print "Screening worksheet, " & Osiris_Review_Constant.SCREENING_SHEET & " created!"
-        Set baseRange = Sheets(Osiris_Review_Constant.SCREENING_SHEET).Range(Osiris_Review_Constant.CONST_BASE_RANGE)
+        Set baseRange = Sheets(Osiris_Review_Constant.SCREENING_SHEET).Range(Osiris_Review_Constant.SCREENING_WORKSHEET_BASE_RANGE)
         baseRange.Select
     End If
 End Sub
@@ -187,8 +189,8 @@ Sub presetPLIWorksheet(ByVal PLI_Switch As String)
     rowBase = 3
     rowEnd = rowBase + nc - 1
 
-    tmpString = "!$" & Osiris_Review_Constant.CONST_COMPANY_NAME_COLUMN & "$" & CStr(rowBase) & ":$" _
-                & Osiris_Review_Constant.CONST_STATUS_COLUMN & "$" & CStr(rowEnd)
+    tmpString = "!$" & Osiris_Review_Constant.SCREENING_WORKSHEET_COMPANY_NAME_COLUMN & "$" & CStr(rowBase) & ":$" _
+                & Osiris_Review_Constant.SCREENING_WORKSHEET_STATUS_COLUMN & "$" & CStr(rowEnd)
     Debug.Print "Screening source range: " & tmpString
     
     If PLI_Switch = Osiris_Review_Constant.CONST_OM_PLI Then
@@ -199,20 +201,20 @@ Sub presetPLIWorksheet(ByVal PLI_Switch As String)
         targetWorksheetName = Osiris_Review_Constant.NCP_COMPARABLE_SHEET
     End If
     Set tgtWs = Worksheets(targetWorksheetName)
-    Set selectedRange = tgtWs.Range(Osiris_Review_Constant.CONST_PLI_SHEET_BASE_RANGE)
+    Set selectedRange = tgtWs.Range(Osiris_Review_Constant.PLI_SHEET_BASE_RANGE)
     
     lRow = Osiris_Review_Gadgets.FindMaximumRow(selectedRange)
     For r = 15 To lRow
         ' Set comparable column vlookup formula
         screeningRangeString = screeningSheet & tmpString
-        Set tmpRange = tgtWs.Cells(r, Osiris_Review_Constant.CONST_PLI_COMPARABLE_COLUMN)
-        colIndex = Asc(Osiris_Review_Constant.CONST_STATUS_COLUMN) - Asc(Osiris_Review_Constant.CONST_COMPANY_NAME_COLUMN) + 1
+        Set tmpRange = tgtWs.Cells(r, Osiris_Review_Constant.PLI_SHEET_COMPARABLE_COLUMN)
+        colIndex = Asc(Osiris_Review_Constant.SCREENING_WORKSHEET_STATUS_COLUMN) - Asc(Osiris_Review_Constant.SCREENING_WORKSHEET_COMPANY_NAME_COLUMN) + 1
         tmpRange.Formula = "= VLOOKUP(B" & CStr(r) & ", " & screeningRangeString & ", " & CStr(colIndex) & ", FALSE)"
         
         ' Set country code column vlookup formula
         Set tmpRange = Nothing
-        Set tmpRange = tgtWs.Cells(r, Osiris_Review_Constant.CONST_PLI_COUNTRY_COLUMN)
-        colIndex = Asc(Osiris_Review_Constant.CONST_COUNTRY_CODE_COLUMN) - Asc(Osiris_Review_Constant.CONST_COMPANY_NAME_COLUMN) + 1
+        Set tmpRange = tgtWs.Cells(r, Osiris_Review_Constant.PLI_SHEET_COUNTRY_COLUMN)
+        colIndex = Asc(Osiris_Review_Constant.SCREENING_WORKSHEET_COUNTRY_CODE_COLUMN) - Asc(Osiris_Review_Constant.SCREENING_WORKSHEET_COMPANY_NAME_COLUMN) + 1
         tmpRange.Formula = "= VLOOKUP(B" & CStr(r) & ", " & screeningRangeString & ", " & CStr(colIndex) & ", FALSE)"
         countryINChinese = Osiris_Review_Gadgets.countryCodeDict(tmpRange.Value)
         tmpRange.ClearContents
@@ -220,13 +222,13 @@ Sub presetPLIWorksheet(ByVal PLI_Switch As String)
         
         ' Convert company names in all capital letter case to proper case
         Set tmpRange = Nothing
-        Set tmpRange = tgtWs.Cells(r, Osiris_Review_Constant.CONST_PLI_COMPANY_PROPER_COLUMN)
+        Set tmpRange = tgtWs.Cells(r, Osiris_Review_Constant.PLI_SHEET_COMPANY_PROPER_COLUMN)
         tmpRange.Formula = "= PROPER(B" & CStr(r) & ")"
         
         ' Add rejection reason vlookup formula
         Set tmpRange = Nothing
-        Set tmpRange = tgtWs.Cells(r, Osiris_Review_Constant.CONST_PLI_REJECTION_REASON_COLUMN)
-        colIndex = Asc(Osiris_Review_Constant.CONST_MANUAL_REVIEW_COLUMN) - Asc(Osiris_Review_Constant.CONST_COMPANY_NAME_COLUMN) + 1
+        Set tmpRange = tgtWs.Cells(r, Osiris_Review_Constant.PLI_SHEET_REJECTION_REASON_COLUMN)
+        colIndex = Asc(Osiris_Review_Constant.SCREENING_WORKSHEET_REVIEW_COLUMN) - Asc(Osiris_Review_Constant.SCREENING_WORKSHEET_COMPANY_NAME_COLUMN) + 1
         tmpRange.Formula = "= VLOOKUP(B" & CStr(r) & ", " & screeningRangeString & ", " & CStr(colIndex) & ", FALSE)"
         
     Next r
@@ -252,9 +254,9 @@ Sub comparableReviewByRow(ByVal PLI_Switch As String, ByVal currentRow As Long)
     Dim screenStat                                              As Screening_Statistics
     Dim nc                                                      As Integer
     
-    companyIdx = ActiveSheet.Cells(currentRow, Osiris_Review_Constant.CONST_IDX_COLUMN).Value
-    companyName = ActiveSheet.Cells(currentRow, Osiris_Review_Constant.CONST_COMPANY_NAME_COLUMN).Value
-    Set selectedRange = ActiveSheet.Cells(currentRow, Osiris_Review_Constant.CONST_COMPANY_NAME_COLUMN)
+    companyIdx = ActiveSheet.Cells(currentRow, Osiris_Review_Constant.SCREENING_WORKSHEET_IDX_COLUMN).Value
+    companyName = ActiveSheet.Cells(currentRow, Osiris_Review_Constant.SCREENING_WORKSHEET_COMPANY_NAME_COLUMN).Value
+    Set selectedRange = ActiveSheet.Cells(currentRow, Osiris_Review_Constant.SCREENING_WORKSHEET_COMPANY_NAME_COLUMN)
     
     nc = Osiris_Review_Gadgets.FindNumberOfCompanies()
     Debug.Print "Review company name: " & companyName & " ; Total number of companies: " & CStr(nc)
@@ -268,23 +270,23 @@ Sub comparableReviewByRow(ByVal PLI_Switch As String, ByVal currentRow As Long)
     End If
     
     Set tgtWs = Worksheets(targetWorksheetName)
-    Set selectedRange = tgtWs.Range(Osiris_Review_Constant.CONST_PLI_SHEET_BASE_RANGE)
+    Set selectedRange = tgtWs.Range(Osiris_Review_Constant.PLI_SHEET_BASE_RANGE)
     ' Locate the final row of the company list
     lRow = Osiris_Review_Gadgets.FindMaximumRow(selectedRange)
     ' Retrieve PLI numbers of the company under review
-    PLI_Title = CStr(tgtWs.Cells(4, Osiris_Review_Constant.CONST_PLI_CY_COLUMN).Value)
+    PLI_Title = CStr(tgtWs.Cells(4, Osiris_Review_Constant.PLI_SHEET_CY_COLUMN).Value)
     PLI_Title = Osiris_Review_Gadgets.CleanMessyString(PLI_Title)
-    PLIMinus1_Title = tgtWs.Cells(4, Osiris_Review_Constant.CONST_PLI_LY_COLUMN).Value
+    PLIMinus1_Title = tgtWs.Cells(4, Osiris_Review_Constant.PLI_SHEET_LY_COLUMN).Value
     PLIMinus1_Title = CleanMessyString(PLIMinus1_Title)
-    PLIMinus2_Title = tgtWs.Cells(4, Osiris_Review_Constant.CONST_PLI_LLY_COLUMN).Value
+    PLIMinus2_Title = tgtWs.Cells(4, Osiris_Review_Constant.PLI_SHEET_LLY_COLUMN).Value
     PLIMinus2_Title = CleanMessyString(PLIMinus2_Title)
     For r = 1 To lRow
-        Set tempRange = tgtWs.Cells(r, Osiris_Review_Constant.CONST_PLI_COMPANY_COLUMN)
+        Set tempRange = tgtWs.Cells(r, Osiris_Review_Constant.PLI_SHEET_COMPANY_COLUMN)
         If companyName = tempRange.Value Then
-            PLI_average = Format(tgtWs.Cells(r, Osiris_Review_Constant.CONST_PLI_AVERAGE_COLUMN).Value, "##0.00")
-            PLI = Format(tgtWs.Cells(r, Osiris_Review_Constant.CONST_PLI_CY_COLUMN).Value, "##0.00")
-            PLI_minus_1 = Format(tgtWs.Cells(r, Osiris_Review_Constant.CONST_PLI_LY_COLUMN).Value, "##0.00")
-            PLI_minus_2 = Format(tgtWs.Cells(r, Osiris_Review_Constant.CONST_PLI_LLY_COLUMN).Value, "##0.00")
+            PLI_average = Format(tgtWs.Cells(r, Osiris_Review_Constant.PLI_SHEET_AVERAGE_COLUMN).Value, "##0.00")
+            PLI = Format(tgtWs.Cells(r, Osiris_Review_Constant.PLI_SHEET_CY_COLUMN).Value, "##0.00")
+            PLI_minus_1 = Format(tgtWs.Cells(r, Osiris_Review_Constant.PLI_SHEET_LY_COLUMN).Value, "##0.00")
+            PLI_minus_2 = Format(tgtWs.Cells(r, Osiris_Review_Constant.PLI_SHEET_LLY_COLUMN).Value, "##0.00")
             Exit For
         End If
     Next r
@@ -292,16 +294,16 @@ Sub comparableReviewByRow(ByVal PLI_Switch As String, ByVal currentRow As Long)
     '
     ' Retrieve company information from Screening_Worksheet and populate data to the UserForm
     '
-    primaryBusiness = ActiveSheet.Cells(currentRow, Osiris_Review_Constant.CONST_TRADE_COLUMN).Value
-    businessDescription = ActiveSheet.Cells(currentRow, Osiris_Review_Constant.CONST_COMPANY_DESCRIPTION_COLUMN).Value
-    productAndService = ActiveSheet.Cells(currentRow, Osiris_Review_Constant.CONST_PNS_COLUMN).Value
-    commentText = ActiveSheet.Cells(currentRow, Osiris_Review_Constant.CONST_COMMENT_COLUMN).Value
+    primaryBusiness = ActiveSheet.Cells(currentRow, Osiris_Review_Constant.SCREENING_WORKSHEET_TRADE_COLUMN).Value
+    businessDescription = ActiveSheet.Cells(currentRow, Osiris_Review_Constant.SCREENING_WORKSHEET_COMPANY_DESCRIPTION_COLUMN).Value
+    productAndService = ActiveSheet.Cells(currentRow, Osiris_Review_Constant.SCREENING_WORKSHEET_PNS_COLUMN).Value
+    commentText = ActiveSheet.Cells(currentRow, Osiris_Review_Constant.SCREENING_WORKSHEET_COMMENT_COLUMN).Value
     '
     ' Determine comparable state label
     '
-    comparableStateLabel = ActiveSheet.Cells(currentRow, Osiris_Review_Constant.CONST_STATUS_COLUMN).Value
+    comparableStateLabel = ActiveSheet.Cells(currentRow, Osiris_Review_Constant.SCREENING_WORKSHEET_STATUS_COLUMN).Value
     comparableStateLabel = Osiris_Review_Gadgets.ReturnStateLabel(comparableStateLabel)
-    rejectionReason = ActiveSheet.Cells(currentRow, Osiris_Review_Constant.CONST_MANUAL_REVIEW_COLUMN).Value
+    rejectionReason = ActiveSheet.Cells(currentRow, Osiris_Review_Constant.SCREENING_WORKSHEET_REVIEW_COLUMN).Value
     ' sanity check before calling AscW(Char) function
     If rejectionReason = "" Then
         rejectionReason = " "
@@ -435,9 +437,9 @@ Private Sub updateWorksheets()
     End With
     
     ' update Screening_Worksheet
-    ActiveSheet.Cells(currentRow, Osiris_Review_Constant.CONST_STATUS_COLUMN).Value = comparableCategory
-    ActiveSheet.Cells(currentRow, Osiris_Review_Constant.CONST_MANUAL_REVIEW_COLUMN).Value = rejectConditionReason
-    ActiveSheet.Cells(currentRow, Osiris_Review_Constant.CONST_COMMENT_COLUMN).Value = reviewComment
+    ActiveSheet.Cells(currentRow, Osiris_Review_Constant.SCREENING_WORKSHEET_STATUS_COLUMN).Value = comparableCategory
+    ActiveSheet.Cells(currentRow, Osiris_Review_Constant.SCREENING_WORKSHEET_REVIEW_COLUMN).Value = rejectConditionReason
+    ActiveSheet.Cells(currentRow, Osiris_Review_Constant.SCREENING_WORKSHEET_COMMENT_COLUMN).Value = reviewComment
     ' update PLI comparable worksheet
     If Me.lblPLI = Osiris_Review_Constant.CONST_OM_PLI_LABEL Then
         Debug.Print "Get quartile information from " & Osiris_Review_Constant.OM_COMPARABLE_SHEET
@@ -476,15 +478,15 @@ Function getQuartileUpdate(ByVal comparableSheet As String) As Quartile_Data_Typ
     Dim PLIRangeString              As String
     
     Set tgtWs = Worksheets(comparableSheet)
-    Set selectedRange = tgtWs.Range(Osiris_Review_Constant.CONST_PLI_SHEET_BASE_RANGE)
+    Set selectedRange = tgtWs.Range(Osiris_Review_Constant.PLI_SHEET_BASE_RANGE)
 
     '
     ' ToDo's: allocate this tempRange according to actual situation
     '
     lRow = Osiris_Review_Gadgets.FindMaximumRow(selectedRange)
     fRow = selectedRange.Row
-    PLIRangeString = Osiris_Review_Constant.CONST_PLI_AVERAGE_COLUMN & CStr(fRow) & ":" & _
-                     Osiris_Review_Constant.CONST_PLI_COMPARABLE_COLUMN & CStr(lRow)
+    PLIRangeString = Osiris_Review_Constant.PLI_SHEET_AVERAGE_COLUMN & CStr(fRow) & ":" & _
+                     Osiris_Review_Constant.PLI_SHEET_COMPARABLE_COLUMN & CStr(lRow)
     ' Debug.Print "<getQuartileUpdate>PLIRangeString: " & PLIRangeString
     
     Set tempRange = tgtWs.Range(PLIRangeString)
@@ -513,8 +515,8 @@ Private Sub cbNext_Click()
     Dim activeCellRow, activeCellColumn     As Long
     Dim PLISwitch                           As String
     
-    minRow = Osiris_Review_Gadgets.FindMinimumRow(ActiveSheet.Range(Osiris_Review_Constant.CONST_BASE_RANGE))
-    maxRow = Osiris_Review_Gadgets.FindMaximumRow(ActiveSheet.Range(Osiris_Review_Constant.CONST_BASE_RANGE))
+    minRow = Osiris_Review_Gadgets.FindMinimumRow(ActiveSheet.Range(Osiris_Review_Constant.SCREENING_WORKSHEET_BASE_RANGE))
+    maxRow = Osiris_Review_Gadgets.FindMaximumRow(ActiveSheet.Range(Osiris_Review_Constant.SCREENING_WORKSHEET_BASE_RANGE))
     
     currRow = ActiveCell.Row
     Debug.Print "Current row: " & currRow
@@ -541,8 +543,8 @@ Private Sub cbPrev_Click()
     Dim activeCellRow, activeCellColumn     As Long
     Dim PLISwitch                           As String
     
-    minRow = Osiris_Review_Gadgets.FindMinimumRow(ActiveSheet.Range(Osiris_Review_Constant.CONST_BASE_RANGE))
-    maxRow = Osiris_Review_Gadgets.FindMaximumRow(ActiveSheet.Range(Osiris_Review_Constant.CONST_BASE_RANGE))
+    minRow = Osiris_Review_Gadgets.FindMinimumRow(ActiveSheet.Range(Osiris_Review_Constant.SCREENING_WORKSHEET_BASE_RANGE))
+    maxRow = Osiris_Review_Gadgets.FindMaximumRow(ActiveSheet.Range(Osiris_Review_Constant.SCREENING_WORKSHEET_BASE_RANGE))
     
     currRow = ActiveCell.Row
     Debug.Print "Current row: " & currRow
@@ -573,7 +575,7 @@ Private Sub cbReload_Click()
     Dim PLISwitch                           As String
     
     currentRow = ActiveCell.Row
-    companyName = ActiveSheet.Cells(currentRow, Osiris_Review_Constant.CONST_COMPANY_NAME_COLUMN).Value
+    companyName = ActiveSheet.Cells(currentRow, Osiris_Review_Constant.SCREENING_WORKSHEET_COMPANY_NAME_COLUMN).Value
     updateScreeningWorksheet = False
 
     Set srcWorksheet = Sheets(Osiris_Review_Constant.MASTER_SHEET)
@@ -581,7 +583,7 @@ Private Sub cbReload_Click()
     originalVr = retrieveOriginalRecord(srcWorksheet, companyName)
     
     If originalVr.valid Then
-        tempStr = Osiris_Review_Constant.CONST_COMPANY_NAME_COLUMN & CStr(currentRow)
+        tempStr = Osiris_Review_Constant.SCREENING_WORKSHEET_COMPANY_NAME_COLUMN & CStr(currentRow)
         Debug.Print "Screening record at: " & tempStr
         Debug.Print "Original info. range: " & originalVr.srcRangeStr
         '
@@ -617,7 +619,7 @@ Function retrieveOriginalRecord(ByVal srcWorksheet As Worksheet, ByVal companyNa
     valid = False
     
     ' Visit the master worksheet and get the original record associated with the input companyName
-    Set upperLeftCell = srcWorksheet.Range(Osiris_Review_Constant.CONST_BASE_RANGE)
+    Set upperLeftCell = srcWorksheet.Range(Osiris_Review_Constant.SCREENING_WORKSHEET_BASE_RANGE)
     vr.srcRangeStr = upperLeftCell.Address
     
     ' Loop the original records row-by-row to find the associated company record
@@ -625,9 +627,9 @@ Function retrieveOriginalRecord(ByVal srcWorksheet As Worksheet, ByVal companyNa
     Debug.Print "Traverse company info. to row: " & CStr(lRow)
     
     For r = 1 To lRow
-        Set tempRange = srcWorksheet.Cells(r, Osiris_Review_Constant.CONST_COMPANY_NAME_COLUMN)
+        Set tempRange = srcWorksheet.Cells(r, Osiris_Review_Constant.SCREENING_WORKSHEET_COMPANY_NAME_COLUMN)
         If companyName = tempRange.Value Then
-            srcRangeStr = Osiris_Review_Constant.CONST_COMPANY_NAME_COLUMN & CStr(r) & ":" & Osiris_Review_Constant.CONST_STATUS_COLUMN & CStr(r)
+            srcRangeStr = Osiris_Review_Constant.SCREENING_WORKSHEET_COMPANY_NAME_COLUMN & CStr(r) & ":" & Osiris_Review_Constant.SCREENING_WORKSHEET_STATUS_COLUMN & CStr(r)
             Debug.Print "Source company found: " & companyName & " Original company infomation range: " & srcRangeStr
             vr.srcRangeStr = srcRangeStr
             valid = True
