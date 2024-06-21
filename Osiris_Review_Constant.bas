@@ -106,12 +106,13 @@ Public Const CONST_COMPARABLE_STATE_TBD         As String = "TBD"
 Public Const CONST_COMPARABLE_STATE_NG          As String = "NG"
 Public Const CONST_COMPARABLE_STATE_OK          As String = "OK"
 Public Const CONST_COMPARABLE_STATE_CONDITION   As String = "Condition"
+Public Const CONST_COMPARABLE_STATE_EMPTY       As String = ""
 
 Public Const UNICODE_CHECK                      As Integer = 10004
 Public Const UNICODE_FORBIDDEN                  As Integer = 8856
 
 Public Const RR_SIG_DIFF                        As String = "Significantly different activities or products"
-Public Const RR_BIG_RD_EXPENSE                  As String = "Consolidated and Unconsolidated Research And Development Expense / Total Net Sales is greater than or equal to 1%"
+Public Const RR_BIG_RD_EXPENSE                  As String = "Consolidated and Unconsolidated Research and Development Expense / Total Net Sales is greater than or equal to 1%"
 Public Const RR_BIG_MARKETING_EXPENSE           As String = "Consolidated and Unconsolidated Advertising Expense / Total Net Sales is greater than or equal to 1%"
 Public Const RR_MISSING_DATA                    As String = "Missing Financial Data"
 Public Const RR_THREE_YEAR_LOSS                 As String = "Operating income loss for 3 years"

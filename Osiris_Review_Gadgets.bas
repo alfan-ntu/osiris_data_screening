@@ -2,10 +2,11 @@ Attribute VB_Name = "Osiris_Review_Gadgets"
 '
 '   Description: A module containing Osiris data review associated gadgets
 '
-'   Date: 2024/6/15
+'   Date: 2024/6/16
 '   Author: maoyi.fan@yapro.com.tw
-'   Ver.: 0.1h
+'   Ver.: 0.1i
 '   Revision History:
+'       - 2024/6/16, 0.1i: Adjusted record 'Status' related process due to inconsistent report format
 '       - 2024/6/15, 0.1h: Adjusted constant arrangement to accommodate dual operation conditions
 '       - 2024/6/13, 0.1g: Fixed the issue jumping to the first unscreened record when all records have been screened
 '       - 2024/5/14, 0.1f: Created Screening_Worksheet and populate comparable state formula, country code... in
@@ -16,8 +17,10 @@ Attribute VB_Name = "Osiris_Review_Gadgets"
 '       - 2024/4/15, 0.1b: First added
 '
 '   ToDo's:
-'       1)
-
+'       1) Issue: condition to identify a unscreened record more than just checking if the status column is a check mark.
+'                 In VBA, an uninitialized cell or variable is actually an Emtpy variable. Need to check IsEmtpy in the
+'                 function ScreenStatistics()
+'
 Option Explicit
 
 '
@@ -72,7 +75,7 @@ Sub setupCountryCodeDictionary()
     countryCodeDict.Add Key:="KR", Item:="韓國"
     countryCodeDict.Add Key:="VN", Item:="越南"
     countryCodeDict.Add Key:="MY", Item:="馬來西亞"
-    countryCodeDict.Add Key:="SG", Item:="新加玻"
+    countryCodeDict.Add Key:="SG", Item:="新加坡"
     countryCodeDict.Add Key:="NZ", Item:="紐西蘭"
     ' Debug.Print "Country code list of size " & countryCodeDict.Count & " is created!"
 End Sub
@@ -185,6 +188,7 @@ Function ScreenStatistics(ByVal screenWorksheet As Worksheet) As Screening_Stati
     Dim ss As Screening_Statistics
     Dim selectedRange As Range
     Dim lRow, r As Long
+    Dim dbg As Long
     
     Set selectedRange = screenWorksheet.Range(Osiris_Review_Constant.SCREENING_WORKSHEET_BASE_RANGE)
     lRow = FindMaximumRow(selectedRange)
@@ -197,6 +201,9 @@ Function ScreenStatistics(ByVal screenWorksheet As Worksheet) As Screening_Stati
         .unscreenedCount = 0
         .totalCount = 0
     End With
+    
+    dbg = 0
+    
     For r = 3 To lRow
         Set selectedRange = screenWorksheet.Cells(r, Osiris_Review_Constant.SCREENING_WORKSHEET_STATUS_COLUMN)
         If selectedRange.Value = Osiris_Review_Constant.CONST_COMPARABLE_STATE_CONDITION Then
@@ -207,8 +214,18 @@ Function ScreenStatistics(ByVal screenWorksheet As Worksheet) As Screening_Stati
             ss.okCount = ss.okCount + 1
         ElseIf selectedRange.Value = Osiris_Review_Constant.CONST_COMPARABLE_STATE_TBD Then
             ss.unscreenedCount = ss.unscreenedCount + 1
-        ElseIf AscW(selectedRange.Value) = Osiris_Review_Constant.UNICODE_CHECK Then
+        ElseIf selectedRange.Value = Osiris_Review_Constant.CONST_COMPARABLE_STATE_EMPTY Then
             ss.unscreenedCount = ss.unscreenedCount + 1
+        ElseIf AscW(selectedRange.Value) = Osiris_Review_Constant.UNICODE_CHECK Then
+            '
+            ' Issue: condition to identify a unscreened record more than just checking if the
+            '      status column is a check mark
+            ' ToDo (2024/6/19): to fix this bug
+            '
+            ss.unscreenedCount = ss.unscreenedCount + 1
+        Else
+            dbg = dbg + 1
+            Debug.Print "Debug(" & Str(dbg) & ");  problematic row: " & Str(r)
         End If
     Next r
     ScreenStatistics = ss
@@ -252,11 +269,13 @@ End Function
 
 '
 ' Description: Returns comparable state label, especially handles those non-ASCII code included in Osiris database search results
-' Code Date: 2024/04/14
+' Code Date: 2024/06/16
 '
 Function ReturnStateLabel(ByVal comparableState As String) As String
     ' return comparable state code according to the non-ASCII code selected by Osiris database
-    If AscW(comparableState) = Osiris_Review_Constant.UNICODE_CHECK Then
+    If IsEmpty(comparableState) Or comparableState = Osiris_Review_Constant.CONST_COMPARABLE_STATE_EMPTY Then
+        ReturnStateLabel = Osiris_Review_Constant.CONST_COMPARABLE_STATE_TBD    ' added on 2024/6/16
+    ElseIf AscW(comparableState) = Osiris_Review_Constant.UNICODE_CHECK Then
         ReturnStateLabel = Osiris_Review_Constant.CONST_COMPARABLE_STATE_TBD
     ElseIf AscW(comparableState) = Osiris_Review_Constant.UNICODE_FORBIDDEN Then
         ReturnStateLabel = Osiris_Review_Constant.CONST_COMPARABLE_STATE_NG
@@ -347,7 +366,8 @@ Public Function findFirstUnscreenRecord() As Long
     
     r = firstDataRow
     Set tgtWs = Worksheets(Osiris_Review_Constant.SCREENING_SHEET)
-    Set compStat = tgtWs.Range(Osiris_Review_Constant.SCREENING_WORKSHEET_STATUS_COLUMN & CStr(r))
+    ' Set compStat = tgtWs.Range(Osiris_Review_Constant.SCREENING_WORKSHEET_STATUS_COLUMN & CStr(r))
+    Set compStat = tgtWs.Range(Osiris_Review_Constant.SCREENING_WORKSHEET_COMPANY_NAME_COLUMN & CStr(r))
     firstRecordFound = False
     
     lRow = Osiris_Review_Gadgets.FindMaximumRow(compStat)
@@ -355,7 +375,8 @@ Public Function findFirstUnscreenRecord() As Long
     
     For r = firstDataRow To lRow
         Set compStat = tgtWs.Range(Osiris_Review_Constant.SCREENING_WORKSHEET_STATUS_COLUMN & CStr(r))
-        If AscW(compStat.Value) = Osiris_Review_Constant.UNICODE_CHECK Then
+'        If AscW(compStat.Value) = Osiris_Review_Constant.UNICODE_CHECK Then
+        If recordYetReviewed(compStat.Value) Then
             firstRecordFound = True
             Debug.Print "Unscreened record: " & CStr(r)
             Exit For
@@ -367,4 +388,27 @@ Public Function findFirstUnscreenRecord() As Long
     Set compStat = Nothing
     Set tgtWs = Nothing
     findFirstUnscreenRecord = r
+End Function
+
+'
+' Description: Determine if SCREENING_WORKSHEET_STATUS_COLUMN of the record marks a reviewed flag
+'              i.e. CONST_COMPARABLE_STATE_TBD, CONST_COMPARABLE_STATE_NG, CONST_COMPARABLE_STATE_OK
+'                   or CONST_COMPARABLE_STATE_CONDITION
+' Coding Date: 2024/6/16
+'
+Public Function recordYetReviewed(stateCode As String)
+    Dim yetr As Boolean
+    
+    If StrComp(stateCode, Osiris_Review_Constant.CONST_COMPARABLE_STATE_CONDITION, vbTextCompare) = 0 Then
+        yetr = False
+    ElseIf StrComp(stateCode, Osiris_Review_Constant.CONST_COMPARABLE_STATE_OK, vbTextCompare) = 0 Then
+        yetr = False
+    ElseIf StrComp(stateCode, Osiris_Review_Constant.CONST_COMPARABLE_STATE_NG, vbTextCompare) = 0 Then
+        yetr = False
+    ElseIf StrComp(stateCode, Osiris_Review_Constant.CONST_COMPARABLE_STATE_TBD, vbTextCompare) = 0 Then
+        yetr = False
+    Else
+        yetr = True
+    End If
+    recordYetReviewed = yetr
 End Function

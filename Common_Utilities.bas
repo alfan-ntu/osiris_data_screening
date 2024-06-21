@@ -99,8 +99,8 @@ Attribute ListSheets.VB_ProcData.VB_Invoke_Func = " \n14"
     
     targetWorksheetName = WORKSHEET_LIST
     ' Debug information
-    Debug.Print "I am " & ThisWorkbook.Name
-    Debug.Print "I am at " & ActiveSheet.Name
+    ' Debug.Print "I am " & ThisWorkbook.Name
+    ' Debug.Print "I am at " & ActiveSheet.Name
     ' Do sanity check of the working worksheet
     wsExist = worksheetExists(targetWorksheetName)
     If wsExist Then
