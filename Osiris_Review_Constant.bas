@@ -110,6 +110,8 @@ Public Const CONST_COMPARABLE_STATE_EMPTY       As String = ""
 
 Public Const UNICODE_CHECK                      As Integer = 10004
 Public Const UNICODE_FORBIDDEN                  As Integer = 8856
+Public Const UNICODE_UNKNOWN                    As Integer = 8413     'Osiris displays Unicode 8413 initially for those records
+                                                                      'not banned, not checked
 
 Public Const RR_SIG_DIFF                        As String = "Significantly different activities or products"
 Public Const RR_BIG_RD_EXPENSE                  As String = "Consolidated and Unconsolidated Research and Development Expense / Total Net Sales is greater than or equal to 1%"

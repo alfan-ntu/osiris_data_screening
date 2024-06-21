@@ -17,9 +17,7 @@ Attribute VB_Name = "Osiris_Review_Gadgets"
 '       - 2024/4/15, 0.1b: First added
 '
 '   ToDo's:
-'       1) Issue: condition to identify a unscreened record more than just checking if the status column is a check mark.
-'                 In VBA, an uninitialized cell or variable is actually an Emtpy variable. Need to check IsEmtpy in the
-'                 function ScreenStatistics()
+'       1)
 '
 Option Explicit
 
@@ -32,6 +30,7 @@ Type Screening_Statistics
     rejectCount         As Integer
     unscreenedCount     As Integer
     totalCount          As Integer
+    unknown             As Integer
 End Type
 
 '
@@ -188,7 +187,6 @@ Function ScreenStatistics(ByVal screenWorksheet As Worksheet) As Screening_Stati
     Dim ss As Screening_Statistics
     Dim selectedRange As Range
     Dim lRow, r As Long
-    Dim dbg As Long
     
     Set selectedRange = screenWorksheet.Range(Osiris_Review_Constant.SCREENING_WORKSHEET_BASE_RANGE)
     lRow = FindMaximumRow(selectedRange)
@@ -200,9 +198,8 @@ Function ScreenStatistics(ByVal screenWorksheet As Worksheet) As Screening_Stati
         .rejectCount = 0
         .unscreenedCount = 0
         .totalCount = 0
+        .unknown = 0
     End With
-    
-    dbg = 0
     
     For r = 3 To lRow
         Set selectedRange = screenWorksheet.Cells(r, Osiris_Review_Constant.SCREENING_WORKSHEET_STATUS_COLUMN)
@@ -216,18 +213,18 @@ Function ScreenStatistics(ByVal screenWorksheet As Worksheet) As Screening_Stati
             ss.unscreenedCount = ss.unscreenedCount + 1
         ElseIf selectedRange.Value = Osiris_Review_Constant.CONST_COMPARABLE_STATE_EMPTY Then
             ss.unscreenedCount = ss.unscreenedCount + 1
+        ElseIf AscW(selectedRange.Value) = Osiris_Review_Constant.UNICODE_FORBIDDEN Then
+            ss.rejectCount = ss.rejectCount + 1
         ElseIf AscW(selectedRange.Value) = Osiris_Review_Constant.UNICODE_CHECK Then
-            '
-            ' Issue: condition to identify a unscreened record more than just checking if the
-            '      status column is a check mark
-            ' ToDo (2024/6/19): to fix this bug
-            '
+            ss.unscreenedCount = ss.unscreenedCount + 1
+        ElseIf AscW(selectedRange.Value) = Osiris_Review_Constant.UNICODE_UNKNOWN Then
             ss.unscreenedCount = ss.unscreenedCount + 1
         Else
-            dbg = dbg + 1
-            Debug.Print "Debug(" & Str(dbg) & ");  problematic row: " & Str(r)
+            Debug.Print "Something wrong on the row: " & selectedRange.Row & " of the worksheet: " & screenWorksheet.Name
+            ss.unknown = ss.unknown + 1
         End If
     Next r
+
     ScreenStatistics = ss
 End Function
 
