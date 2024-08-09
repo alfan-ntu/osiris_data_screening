@@ -11,7 +11,8 @@ Attribute VB_Name = "Osiris_Review_Constant"
 '       - 2024/4/15, 0.1b: First added
 '
 '   ToDo's:
-'       1)
+'       1) Configure PLI_SHEET_xxx_xxxxx operation parameters using CONST_PLI_xxx_xxxxx so that
+'          it'll be easier for gadget functions to parse the Profit Level Indicator related worksheet
 '
 Option Explicit
 '
@@ -107,13 +108,14 @@ Public Const CONST_COMPARABLE_STATE_NG          As String = "NG"
 Public Const CONST_COMPARABLE_STATE_OK          As String = "OK"
 Public Const CONST_COMPARABLE_STATE_CONDITION   As String = "Condition"
 Public Const CONST_COMPARABLE_STATE_EMPTY       As String = ""
+Public Const CONST_COMPARABLE_STATE_NEXT        As String = "NEXT"
 
 Public Const UNICODE_CHECK                      As Integer = 10004
 Public Const UNICODE_FORBIDDEN                  As Integer = 8856
 Public Const UNICODE_UNKNOWN                    As Integer = 8413     'Osiris displays Unicode 8413 initially for those records
                                                                       'not banned, not checked
 
-Public Const RR_SIG_DIFF                        As String = "Significantly different activities or products"
+Public Const RR_SIG_DIFF                        As String = "Significantly different business activities or products"
 Public Const RR_BIG_RD_EXPENSE                  As String = "Consolidated and Unconsolidated Research and Development Expense / Total Net Sales is greater than or equal to 1%"
 Public Const RR_BIG_MARKETING_EXPENSE           As String = "Consolidated and Unconsolidated Advertising Expense / Total Net Sales is greater than or equal to 1%"
 Public Const RR_MISSING_DATA                    As String = "Missing Financial Data"
@@ -188,7 +190,10 @@ Public Sub configOpParam(sw As Integer)
     PLI_SHEET_COMPANY_COLUMN = "B"
     PLI_SHEET_BASE_RANGE = "B15"
     PLI_SHEET_AVERAGE_COLUMN = "D"
-    
+    '
+    ' BMK_AVG_YEAR specifies the column offset for which quartile calculation is based
+    ' on. See the implementation of the function Osiris_Review_Gadgets.DoComparableQuartile
+    '
     BMK_AVG_YEAR = 0
    
     '
@@ -222,13 +227,16 @@ Public Sub configOpParam(sw As Integer)
         SCREENING_WORKSHEET_REVIEW_COLUMN = "M"
         SCREENING_WORKSHEET_STATUS_COLUMN = "N"
         SCREENING_WORKSHEET_COMMENT_COLUMN = "O"
-        
+        '
+        ' Notice: The following column arrangement might be different from query to query
+        '         Check this before continuing the company screening process!c
+        '
         PLI_SHEET_CY_COLUMN = "F"
         PLI_SHEET_LY_COLUMN = "G"
         PLI_SHEET_LLY_COLUMN = "I"
         PLI_SHEET_COMPARABLE_COLUMN = "J"
         PLI_SHEET_COUNTRY_COLUMN = "K"
-        PLI_SHEET_COMPANY_PROPER_COLUMN = "L"
+        PLI_SHEET_COMPANY_PROPER_COLUMN = "L"    ' proper(Company Name)
         PLI_SHEET_REJECTION_REASON_COLUMN = "M"
         
         BMK_CURRENT_YEAR = 2

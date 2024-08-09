@@ -16,10 +16,11 @@ Attribute VB_Exposed = False
 '
 '   Description: A UserForm supporting Osiris result screening; Primary progam dealing with Osiris data screening
 '
-'   Date: 2024/6/15
+'   Date: 2024/8/10
 '   Author: maoyi.fan@yapro.com.tw
-'   Ver.: 0.1h
+'   Ver.: 0.1j
 '   Revision History:
+'       - 2024/8/10, 0.1j: Navigation among different companies according to the selected comparable status
 '       - 2024/6/15, 0.1h: Adjusted constant arrangement to accommodate dual operation conditions
 '       - 2024/6/13, 0.1g: Fixed the issue jumping to the first unscreened record when all records have been screened
 '       - 2024/5/14, 0.1f: Created Screening_Worksheet and populate comparable state formula, country code... in
@@ -40,7 +41,7 @@ Attribute VB_Exposed = False
 '                                and sorted alphabetically by the company column
 '          Rejection_Worksheet: includes a table containing rejected company and the reason why the companies are
 '                               rejected
-'       2) Support company name search function
+'       2) Support company name search function'
 '
 '   NOTE: Before the Screening_Worksheet is created automatically, assuming 'Screening_Worksheet' has been created and is
 '         being used as the working sheet for data screening
@@ -235,7 +236,6 @@ Sub presetPLIWorksheet(ByVal PLI_Switch As String)
 
 End Sub
 
-
 '
 ' Description: Break down the company information display and review
 ' Code date: 2024/4/15
@@ -283,6 +283,7 @@ Sub comparableReviewByRow(ByVal PLI_Switch As String, ByVal currentRow As Long)
     For r = 1 To lRow
         Set tempRange = tgtWs.Cells(r, Osiris_Review_Constant.PLI_SHEET_COMPANY_COLUMN)
         If companyName = tempRange.Value Then
+            ' update PLI indices with proper display format
             PLI_average = Format(tgtWs.Cells(r, Osiris_Review_Constant.PLI_SHEET_AVERAGE_COLUMN).Value, "##0.00")
             PLI = Format(tgtWs.Cells(r, Osiris_Review_Constant.PLI_SHEET_CY_COLUMN).Value, "##0.00")
             PLI_minus_1 = Format(tgtWs.Cells(r, Osiris_Review_Constant.PLI_SHEET_LY_COLUMN).Value, "##0.00")
@@ -456,11 +457,11 @@ Private Sub updateWorksheets()
     Me.tbRejectCount.Value = screenStat.rejectCount
     Me.tbUnscreenCount.Value = screenStat.unscreenedCount
     ' update quartile information on UserForm PLIDetailsForm
-    Me.tbMin.Value = q.minQuartile
-    Me.tbLowerQuartile.Value = q.lowerQuartile
-    Me.tbMedian.Value = q.medianQuartiile
-    Me.tbUpperQuartile.Value = q.upperQuartile
-    Me.tbMax.Value = q.maxQuartile
+    Me.tbMin.Value = Format(q.minQuartile, "#.00")
+    Me.tbLowerQuartile.Value = Format(q.lowerQuartile, "#.00")
+    Me.tbMedian.Value = Format(q.medianQuartiile, "#.00")
+    Me.tbUpperQuartile.Value = Format(q.upperQuartile, "#.00")
+    Me.tbMax.Value = Format(q.maxQuartile, "#.00")
 
 End Sub
 
@@ -507,32 +508,62 @@ Private Sub cbExit_Click()
 End Sub
 
 '
-' Description: Move to the next record for new review
-' Code Date: 2024/4/15
+' Description: Move to the next record for new review. Extended 'Next' to various criteria
+' Code Date: 2024/8/10
 '
 Private Sub cbNext_Click()
     Dim currRow, minRow, maxRow             As Long
     Dim activeCellRow, activeCellColumn     As Long
     Dim PLISwitch                           As String
+    Dim nextRow                             As Long
     
     minRow = Osiris_Review_Gadgets.FindMinimumRow(ActiveSheet.Range(Osiris_Review_Constant.SCREENING_WORKSHEET_BASE_RANGE))
     maxRow = Osiris_Review_Gadgets.FindMaximumRow(ActiveSheet.Range(Osiris_Review_Constant.SCREENING_WORKSHEET_BASE_RANGE))
-    
     currRow = ActiveCell.Row
-    Debug.Print "Current row: " & currRow
-    If currRow < maxRow Then
-        With ActiveCell
-            .Offset(1, 0).Select
-        End With
-        currRow = ActiveCell.Row
-        PLISwitch = Osiris_Review_Gadgets.PLILabelToSwitch(Me.lblPLI.Caption)
-        Debug.Print "New Current row: " & currRow & " PLI Switch: " & PLISwitch
-        
-        Call comparableReviewByRow(PLISwitch, currRow)
-    Else
+    
+    nextRow = find_next_row(ActiveCell, cboxJump.Text, minRow, maxRow)
+    Debug.Print "<Debug> Next row goes to : " & nextRow
+
+    If nextRow > maxRow Then
         MsgBox "已到達最後一筆可比較公司資料", vbExclamation
+    Else
+        With ActiveCell
+            .Offset(nextRow - currRow, 0).Select
+        End With
+        PLISwitch = Osiris_Review_Gadgets.PLILabelToSwitch(Me.lblPLI.Caption)
+        Debug.Print "New Current row: " & nextRow & " PLI Switch: " & PLISwitch
+        Call comparableReviewByRow(PLISwitch, nextRow)
     End If
 End Sub
+
+'
+' Description: Locate next row according to jump condition selected
+' Code Date: 2024/8/9
+'
+Private Function find_next_row(currRange As Range, jump_criteria As String, minRow As Variant, maxRow As Variant) As Long
+    Dim nextRow, r As Long
+    Dim comparableState As String
+    Dim ws As Worksheet
+        
+    Set ws = ActiveSheet
+    nextRow = currRange.Row
+    ' Debug.Print "<Debug> Jump start row number: " & currRange.Row & ";jumpType: " & jump_criteria & "; minRow: " & CStr(minRow) & "; maxRow: " & CStr(maxRow)
+    Select Case jump_criteria
+    Case Osiris_Review_Constant.CONST_COMPARABLE_STATE_NEXT
+        nextRow = currRange.Row + 1
+    Case Else
+        For r = (currRange.Row + 1) To maxRow
+            comparableState = ws.Cells(r, Osiris_Review_Constant.SCREENING_WORKSHEET_STATUS_COLUMN).Value
+            If comparableState = jump_criteria Then
+                nextRow = r
+                GoTo ReturnLine
+            End If
+        Next r
+        nextRow = r
+    End Select
+ReturnLine:
+    find_next_row = nextRow
+End Function
 
 '
 ' Description: Move to the previous record for new review
@@ -542,24 +573,57 @@ Private Sub cbPrev_Click()
     Dim currRow, minRow, maxRow             As Long
     Dim activeCellRow, activeCellColumn     As Long
     Dim PLISwitch                           As String
+    Dim prevRow                             As Long
     
     minRow = Osiris_Review_Gadgets.FindMinimumRow(ActiveSheet.Range(Osiris_Review_Constant.SCREENING_WORKSHEET_BASE_RANGE))
     maxRow = Osiris_Review_Gadgets.FindMaximumRow(ActiveSheet.Range(Osiris_Review_Constant.SCREENING_WORKSHEET_BASE_RANGE))
     
     currRow = ActiveCell.Row
     Debug.Print "Current row: " & currRow
-    If currRow > minRow Then
-        With ActiveCell
-            .Offset(-1, 0).Select
-        End With
-        currRow = ActiveCell.Row
-        PLISwitch = Osiris_Review_Gadgets.PLILabelToSwitch(Me.lblPLI.Caption)
-        Debug.Print "New Current row: " & currRow & " PLI Switch: " & PLISwitch
-        Call comparableReviewByRow(PLISwitch, currRow)
-    Else
+    prevRow = find_previous_row(ActiveCell, cboxJump.Text, minRow, maxRow)
+    Debug.Print "<Debug> Previous row goes to : " & prevRow
+    
+    If prevRow < minRow Then
         MsgBox "已到達第一筆可比較公司資料", vbExclamation
+    Else
+        With ActiveCell
+            .Offset(prevRow - currRow, 0).Select
+        End With
+        PLISwitch = Osiris_Review_Gadgets.PLILabelToSwitch(Me.lblPLI.Caption)
+        Debug.Print "New Current row: " & prevRow & " PLI Switch: " & PLISwitch
+        Call comparableReviewByRow(PLISwitch, prevRow)
     End If
+
 End Sub
+
+'
+' Description: Locate previous row according to jump condition selected
+' Code Date: 2024/8/9
+'
+Private Function find_previous_row(currRange As Range, jump_criteria As String, minRow As Variant, maxRow As Variant) As Long
+    Dim prevRow, r As Long
+    Dim comparableState As String
+    Dim ws As Worksheet
+        
+    Set ws = ActiveSheet
+    prevRow = currRange.Row
+    Debug.Print "<Debug> Jump start row number: " & currRange.Row & ";jumpType: " & jump_criteria & "; minRow: " & CStr(minRow) & "; maxRow: " & CStr(maxRow)
+    Select Case jump_criteria
+    Case Osiris_Review_Constant.CONST_COMPARABLE_STATE_NEXT
+        prevRow = currRange.Row - 1
+    Case Else
+        For r = (currRange.Row - 1) To minRow Step -1
+            comparableState = ws.Cells(r, Osiris_Review_Constant.SCREENING_WORKSHEET_STATUS_COLUMN).Value
+            If comparableState = jump_criteria Then
+                prevRow = r
+                GoTo ReturnLine
+            End If
+        Next r
+        prevRow = r
+    End Select
+ReturnLine:
+    find_previous_row = prevRow
+End Function
 
 '
 ' Description: Reload the original Osiris record of the Active row for restart a new review
@@ -696,13 +760,14 @@ End Sub
 ' Description: Populates allowable items for list boxes
 '
 Private Sub populateComboBoxList()
+    ' comparable state of each potentially comparable company
     With Me.cboxComparableState
         .AddItem Osiris_Review_Constant.CONST_COMPARABLE_STATE_NG
         .AddItem Osiris_Review_Constant.CONST_COMPARABLE_STATE_OK
         .AddItem Osiris_Review_Constant.CONST_COMPARABLE_STATE_CONDITION
         .AddItem Osiris_Review_Constant.CONST_COMPARABLE_STATE_TBD
     End With
-    
+    ' possible rejection reason list
     With Me.cboxRejectionReason
         .AddItem Osiris_Review_Constant.RR_SIG_DIFF
         .AddItem Osiris_Review_Constant.RR_BIG_MARKETING_EXPENSE
@@ -710,6 +775,14 @@ Private Sub populateComboBoxList()
         .AddItem Osiris_Review_Constant.RR_MISSING_DATA
         .AddItem Osiris_Review_Constant.RR_THREE_YEAR_LOSS
         .AddItem Osiris_Review_Constant.RR_OTHERS
+    End With
+    ' jump condtion for 'Next' and 'Previous' button
+    With Me.cboxJump
+        .AddItem Osiris_Review_Constant.CONST_COMPARABLE_STATE_NEXT
+        .AddItem Osiris_Review_Constant.CONST_COMPARABLE_STATE_NG
+        .AddItem Osiris_Review_Constant.CONST_COMPARABLE_STATE_OK
+        .AddItem Osiris_Review_Constant.CONST_COMPARABLE_STATE_CONDITION
+        .AddItem Osiris_Review_Constant.CONST_COMPARABLE_STATE_TBD
     End With
 End Sub
 

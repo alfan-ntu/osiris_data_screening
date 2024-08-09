@@ -47,10 +47,13 @@ Public newlyCreated As Boolean
 ' Description: Display the Net Cost Plus(NCP) financial data of the selected company
 ' Keyboard Shortcut: (Ctrl-Shift-N)
 ' Code Date: 2024/4/12
+' Note: How content of Screening_Worksheet is interpreted depends on the number of exclusion criteria was
+'       set when conducting Osiris database query. This usually contrains either or or both 'R&D Expense over something'
+'       and 'Advertisement Expense over something'
 '
 Sub CompanyNCPDetails()
     ' Test code: 2024/6/14
-    Osiris_Review_Constant.configOpParam (Osiris_Review_Constant.SINGLE_EXCLUSION_CRITERIA)
+    Osiris_Review_Constant.configOpParam (Osiris_Review_Constant.DUAL_EXCLUSION_CRITERIA)
     Debug.Print "Param1: " & Osiris_Review_Constant.OP_PARAM1 & " Param2: " & Str(Osiris_Review_Constant.OP_PARAM2)
     
     PLIDetailsForm.comparableReview (CONST_NCP_PLI)

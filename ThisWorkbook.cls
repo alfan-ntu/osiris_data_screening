@@ -42,9 +42,11 @@ Sub Workbook_Open()
     
     ' Assign the shortcut key Ctrl-Shift-O to the subroutine Sub CompanyOMDetails in Common_Utitities module
     Application.OnKey "+^{O}", "CompanyOMDetails"
+    Debug.Print "Assigning shortcut Ctrl-Shift-O to 'CompanyOMDetails'"
     
     ' Assign the shortcut key Ctrl-Shift-N to the subroutine Sub CompanyNCPDetails in Common_Utilities
     Application.OnKey "+^{N}", "CompanyNCPDetails"
+    Debug.Print "Assigning shortcut Ctrl-Shift-N to 'CompanyNCPDetails'"
     
     ' Assign the shortcut key Ctrl-Shift-T to the subroutine Sub configOpParam in Osisris_Review_Constant module
     ' Newly added test code
