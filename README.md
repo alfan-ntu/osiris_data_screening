@@ -2,8 +2,8 @@
 ## General Description: 
 This is an Excel utility program developed in VBA supporting Osiris data screening, real time PLI calculation and other common functionalities.
 
-Ver. 0.1f  
-Date: 2024/5/14  
+Ver. 0.1h
+Date: 2024/9/5  
 Author: maoyi.fan@yapro.com.tw
 
 ## Installations
@@ -24,10 +24,10 @@ As of the time this document is edited, this program includes the following VBA 
 5. Osiris_Review_Gadgets.bas: This VBA file includes customized data types, Quartile calculation routine, screening statistics routine, worksheet geometry support utilities, string operation routines... , etc.
 <img src="./img/GUI.png" width=""> 
 
-## Discussions
+## Discussions/History
 1. ver. 0.1e implemented basic functionalities using basic coding skills. Migration to a class based implementation may be a way to an organized program when more complicated functionalities are necessary.
 2. ver. 0.1f ensure Screening_Worksheet, OM_Screening, NCP_Screening exist
+3. ver. 0.1j Navigation among different companies according to the selected comparable status
 
 ## ToDo's
-1. Add message box at the exit of UserFrame to determine if a file save is necessary
-2. Add country lookup formula when creating the worksheets OM_Comparables and NCP_Comparables
+1. Check potential comparables of the year agains comparables status of the last or previous years
