@@ -16,10 +16,11 @@ Attribute VB_Exposed = False
 '
 '   Description: A UserForm supporting Osiris result screening; Primary progam dealing with Osiris data screening
 '
-'   Date: 2024/8/10
+'   Date: 2024/9/5
 '   Author: maoyi.fan@yapro.com.tw
-'   Ver.: 0.1j
+'   Ver.: 0.1k
 '   Revision History:
+'       - 2024/9/5,  0.1k: Added column header of extra columns in worksheets "Screening_Worksheet", "PLI_Screening"
 '       - 2024/8/10, 0.1j: Navigation among different companies according to the selected comparable status
 '       - 2024/6/15, 0.1h: Adjusted constant arrangement to accommodate dual operation conditions
 '       - 2024/6/13, 0.1g: Fixed the issue jumping to the first unscreened record when all records have been screened
@@ -101,11 +102,12 @@ End Sub
 '
 ' Description: Ensure the Screening_Worksheet exists by copying Osiris_Review_Constant.MASTER_SHEET, ¦Cªí (2),
 '              if it doesn't and set the the first record as the selected target
-' Coding Date: 2024/5/13
+' Coding Date: 2024/9/5
 '
 Sub ensureScreeningWorksheetExists()
     Dim worksheetIndex      As Integer
-    Dim baseRange           As Range
+    Dim targetRange         As Range
+    Dim tmpInt              As Integer
     
     If Common_Utilities.worksheetExists(Osiris_Review_Constant.SCREENING_SHEET) Then
         Debug.Print "Screening worksheet, " & Osiris_Review_Constant.SCREENING_SHEET & " exists!"
@@ -116,8 +118,15 @@ Sub ensureScreeningWorksheetExists()
         worksheetIndex = Sheets(Osiris_Review_Constant.MASTER_SHEET).Index
         Sheets(worksheetIndex + 1).Name = Osiris_Review_Constant.SCREENING_SHEET
         Debug.Print "Screening worksheet, " & Osiris_Review_Constant.SCREENING_SHEET & " created!"
-        Set baseRange = Sheets(Osiris_Review_Constant.SCREENING_SHEET).Range(Osiris_Review_Constant.SCREENING_WORKSHEET_BASE_RANGE)
-        baseRange.Select
+        tmpInt = CInt(Osiris_Review_Constant.CONST_SCREENING_FIRST_DATA_ROW) - 1
+        ' add the comment header
+        Set targetRange = Sheets(Osiris_Review_Constant.SCREENING_SHEET).Range(Osiris_Review_Constant.CONST_COMMENT_COLUMN & CStr(tmpInt))
+        targetRange.HorizontalAlignment = xlHAlignCenter
+        targetRange.Value = "Comment"
+        ' set the highlighted range
+        Call Common_Utilities.SetColumnWidth(Osiris_Review_Constant.CONST_COMMENT_COLUMN, 30)
+        Set targetRange = Sheets(Osiris_Review_Constant.SCREENING_SHEET).Range(Osiris_Review_Constant.SCREENING_WORKSHEET_BASE_RANGE)
+        targetRange.Select
     End If
 End Sub
 
@@ -164,13 +173,52 @@ Sub ensurePLIWorksheetExists(PLI_Switch As String)
     originalCell.Select
 
 End Sub
-
+'
+' Description: preset headers of extra columns in the PLI screening worksheet
+' Coding Date: 20204/9/5
+'
+Sub presetPLIWorkshee_Header(tgtWs As Worksheet)
+    Dim tmpString                           As String
+    Dim tmpRange                            As Range
+    '
+    ' prepare the header of extra columns in the PLI screening worksheet
+    ' Comparable State
+    tmpString = Osiris_Review_Constant.CONST_PLI_COMPARABLE_COLUMN & CStr(CInt(Osiris_Review_Constant.CONST_PLI_FIRST_DATA_ROW) - 1)
+    Set tmpRange = tgtWs.Range(tmpString)
+    tmpRange.Value = "Comparable State"
+    tmpRange.HorizontalAlignment = xlHAlignCenter
+    tmpRange.WrapText = True
+    Call Common_Utilities.SetColumnWidth(Osiris_Review_Constant.CONST_PLI_COMPARABLE_COLUMN, 10)
+    '
+    ' Country/Region Code
+    tmpString = Osiris_Review_Constant.CONST_PLI_COUNTRY_COLUMN & CStr(CInt(Osiris_Review_Constant.CONST_PLI_FIRST_DATA_ROW) - 1)
+    Set tmpRange = tgtWs.Range(tmpString)
+    tmpRange.Value = "Country/Region"
+    tmpRange.HorizontalAlignment = xlHAlignCenter
+    tmpRange.WrapText = True
+    Call Common_Utilities.SetColumnWidth(Osiris_Review_Constant.CONST_PLI_COMPARABLE_COLUMN, 10)
+    '
+    ' Company Name in Proper Form
+    tmpString = Osiris_Review_Constant.CONST_PLI_COMPANY_PROPER_COLUMN & CStr(CInt(Osiris_Review_Constant.CONST_PLI_FIRST_DATA_ROW) - 1)
+    Set tmpRange = tgtWs.Range(tmpString)
+    tmpRange.Value = "Company Name"
+    tmpRange.HorizontalAlignment = xlHAlignCenter
+    tmpRange.WrapText = True
+    Call Common_Utilities.SetColumnWidth(Osiris_Review_Constant.CONST_PLI_COMPANY_PROPER_COLUMN, 15)
+    '
+    ' Rejection Reason
+    tmpString = Osiris_Review_Constant.CONST_PLI_REJECTION_REASON_COLUMN & CStr(CInt(Osiris_Review_Constant.CONST_PLI_FIRST_DATA_ROW) - 1)
+    Set tmpRange = tgtWs.Range(tmpString)
+    tmpRange.Value = "Rejection Reason"
+    tmpRange.HorizontalAlignment = xlHAlignCenter
+    tmpRange.WrapText = True
+    Call Common_Utilities.SetColumnWidth(Osiris_Review_Constant.CONST_PLI_REJECTION_REASON_COLUMN, 30)
+End Sub
 '
 ' Description: presetPLIWorksheet() presets PLI comparable column, CONST_PLI_COMPARABLE_COLUMN, to synchronize
 '              screening results per Screening_Worksheet when the PLI comparable sheet is created
-' Coding Date: 2024/5/21
+' Coding Date: 2024/9/5
 ' ToDo's:
-'       1. eliminate the use of hard-coded variables, e.g. rowBase...
 '
 Sub presetPLIWorksheet(ByVal PLI_Switch As String)
     Dim targetWorksheetName                 As String
@@ -198,14 +246,15 @@ Sub presetPLIWorksheet(ByVal PLI_Switch As String)
         ' OM Review
         targetWorksheetName = Osiris_Review_Constant.OM_COMPARABLE_SHEET
     Else
-        'NCP Review
+        ' NCP Review
         targetWorksheetName = Osiris_Review_Constant.NCP_COMPARABLE_SHEET
     End If
     Set tgtWs = Worksheets(targetWorksheetName)
+        
+    Call presetPLIWorkshee_Header(tgtWs)
     Set selectedRange = tgtWs.Range(Osiris_Review_Constant.PLI_SHEET_BASE_RANGE)
-    
     lRow = Osiris_Review_Gadgets.FindMaximumRow(selectedRange)
-    For r = 15 To lRow
+    For r = Int(Osiris_Review_Constant.CONST_PLI_FIRST_DATA_ROW) To lRow
         ' Set comparable column vlookup formula
         screeningRangeString = screeningSheet & tmpString
         Set tmpRange = tgtWs.Cells(r, Osiris_Review_Constant.PLI_SHEET_COMPARABLE_COLUMN)

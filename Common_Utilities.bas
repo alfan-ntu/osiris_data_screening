@@ -53,7 +53,8 @@ Public newlyCreated As Boolean
 '
 Sub CompanyNCPDetails()
     ' Test code: 2024/6/14
-    Osiris_Review_Constant.configOpParam (Osiris_Review_Constant.DUAL_EXCLUSION_CRITERIA)
+    ' Osiris_Review_Constant.configOpParam (Osiris_Review_Constant.DUAL_EXCLUSION_CRITERIA)
+    Osiris_Review_Constant.configOpParam (Osiris_Review_Constant.DEFAULT_COLUMN_LAYOUT)
     Debug.Print "Param1: " & Osiris_Review_Constant.OP_PARAM1 & " Param2: " & Str(Osiris_Review_Constant.OP_PARAM2)
     
     PLIDetailsForm.comparableReview (CONST_NCP_PLI)
@@ -66,7 +67,8 @@ End Sub
 '
 Sub CompanyOMDetails()
     ' Test code: 2024/6/14
-    Osiris_Review_Constant.configOpParam (Osiris_Review_Constant.DUAL_EXCLUSION_CRITERIA)
+    ' Osiris_Review_Constant.configOpParam (Osiris_Review_Constant.DUAL_EXCLUSION_CRITERIA)
+    Osiris_Review_Constant.configOpParam (Osiris_Review_Constant.DEFAULT_COLUMN_LAYOUT)
     Debug.Print "Param1: " & Osiris_Review_Constant.OP_PARAM1 & " Param2: " & Str(Osiris_Review_Constant.OP_PARAM2)
     
     PLIDetailsForm.comparableReview (CONST_OM_PLI)
@@ -228,7 +230,6 @@ Function worksheetExists(sheetName As String) As Boolean
     ' For Each ws In ThisWorkbook.Worksheets
     For Each ws In ActiveWorkbook.Worksheets
         If ws.Name = sheetName Then
-            ' Debug.Print "ws.Name:" & ws.Name & " and sheetName:" & sheetName
             worksheetExists = True
             Exit Function
         End If

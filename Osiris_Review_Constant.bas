@@ -2,10 +2,14 @@ Attribute VB_Name = "Osiris_Review_Constant"
 '
 '   Description: A module listing  Osiris data review associated constants
 '
-'   Date: 2024/6/15
+'   Date: 2024/9/5
 '   Author: maoyi.fan@yapro.com.tw
-'   Ver.: 0.1h
+'   Ver.: 0.1k
 '   Revision History:
+'       - 2024/9/5,  0.1k: Unified the way to handle different report layout due to its dynamic behavior
+'       - 2024/8/17, 0.1j: Column layout changes all the time, adjust data parsing column variables based on
+'                          CONST_XXXX. Walk through all these CONST definitions before a new comparables
+'                          screening
 '       - 2024/6/15, 0.1h: Adjusted constant arrangement to accommodate dual operation conditions
 '       - 2024/4/23, 0.1e: Support reload original company records
 '       - 2024/4/15, 0.1b: First added
@@ -20,9 +24,9 @@ Option Explicit
 '
 Public Const CONST_OM_PLI                       As String = "Operating Margin"
 Public Const CONST_NCP_PLI                      As String = "Net Cost Plus"
-Public Const OM_DETAILS_SHEET                   As String = "Benchmark 1"
+Public Const OM_DETAILS_SHEET                   As String = "Benchmark 1"           ' confirm this before starting any new comparables review
 Public Const OM_COMPARABLE_SHEET                As String = "OM_Screening"
-Public Const NCP_DETAILS_SHEET                  As String = "Benchmark 4"
+Public Const NCP_DETAILS_SHEET                  As String = "Benchmark 4"           ' confirm this before starting any new comparables review
 Public Const NCP_COMPARABLE_SHEET               As String = "NCP_Screening"
 Public Const CONST_OM_PLI_LABEL                 As String = "營業淨利率"
 Public Const CONST_NCP_PLI_LABEL                As String = "成本及營業費用淨利率"
@@ -33,72 +37,47 @@ Public Const SCREENING_SHEET                    As String = "Screening_Worksheet
 '
 Public Const MASTER_SHEET                       As String = "列表 (2)"
 Public Const CONST_BASE_RANGE                   As String = "B3"
+Public Const CONST_SCREENING_COMPANY_COLUMN     As String = "B"
+Public Const CONST_SCREENING_FIRST_DATA_ROW     As String = "3"
 Public Const CONST_IDX_COLUMN                   As String = "A"
-Public Const CONST_COMPANY_NAME_COLUMN          As String = "B"
-Public Const CONST_TRADE_COLUMN                 As String = "C"
-Public Const CONST_COMPANY_DESCRIPTION_COLUMN   As String = "D"
-Public Const CONST_PNS_COLUMN                   As String = "E"
-Public Const CONST_COUNTRY_CODE_COLUMN          As String = "F"
-Public Const CONST_MANUAL_REVIEW_COLUMN         As String = "M"
-Public Const CONST_STATUS_COLUMN                As String = "N"
-Public Const CONST_COMMENT_COLUMN               As String = "O"
+Public Const CONST_COMPANY_NAME_COLUMN          As String = "B"         ' NAME
+Public Const CONST_TRADE_COLUMN                 As String = "G"         ' TRADE_DESCRIPTION_EN
+Public Const CONST_COMPANY_DESCRIPTION_COLUMN   As String = "M"         ' DESCRIPTION_HISTORY
+Public Const CONST_PNS_COLUMN                   As String = "L"         ' PRODUCTS_SERVICES
+Public Const CONST_COUNTRY_CODE_COLUMN          As String = "C"         ' COUNTRY_ISO_CODE
+Public Const CONST_MANUAL_REVIEW_COLUMN         As String = "K"         ' MANUAL_REVIEW
+Public Const CONST_STATUS_COLUMN                As String = "Q"         ' STATUS
+Public Const CONST_COMMENT_COLUMN               As String = "R"         ' review Comments column
 
 '
 ' STATUS_COLUMN_OFFSET stores the offset from CONST_COMPANY_NAME_COLUMN to the Status column
-' Note: This might be 12 for the Osiris query of one Advertisement or R&D search criterion; 13
-'       in case of both criteria are set
-'
-'Public Const STATUS_COLUMN_OFFSET               As Integer = 13
+' It changes from review to review due to different criteria selected and different column
+' layout of the report! (2024/9/4)
 '
 ' Layout constants associated with PLI Benchmark worksheet
 ' PLI Benchmark worksheet means OM_COMPARABLE_SHEET in case of Operating Margin review,
 '                               NCP_COMPARABLE_SHEET in case of Net Cost Plus review
 '
 Public Const CONST_PLI_COMPANY_COLUMN           As String = "B"
-Public Const CONST_PLI_SHEET_BASE_RANGE         As String = "B15"
+Public Const CONST_PLI_FIRST_DATA_ROW           As String = "15"
 '
-' Either Advertisement or R&D filter criterion is specified
-'
-'Public Const CONST_PLI_AVERAGE_COLUMN           As String = "D"
-'Public Const CONST_PLI_CY_COLUMN                As String = "E"
-'Public Const CONST_PLI_LY_COLUMN                As String = "F"
-'Public Const CONST_PLI_LLY_COLUMN               As String = "H"
-'Public Const CONST_PLI_COMPARABLE_COLUMN        As String = "I"
-'
-' Notice: Report layout changed in FY2024
+' Notice: PLI(Benchmark) Report layout changed
 ' Date: 2024/5/7
-' Both Advertisement and R&D filter criteria are specified
 '
-Public Const CONST_PLI_AVERAGE_COLUMN           As String = "D"
-Public Const CONST_PLI_CY_COLUMN                As String = "F"
-Public Const CONST_PLI_LY_COLUMN                As String = "G"
-Public Const CONST_PLI_LLY_COLUMN               As String = "I"
-Public Const CONST_PLI_COMPARABLE_COLUMN        As String = "J"
-Public Const CONST_PLI_COUNTRY_COLUMN           As String = "K"
-Public Const CONST_PLI_COMPANY_PROPER_COLUMN    As String = "L"
-Public Const CONST_PLI_REJECTION_REASON_COLUMN  As String = "M"
+Public Const CONST_PLI_AVERAGE_COLUMN           As String = "D"         ' PLI Average Column
+Public Const CONST_PLI_CY_COLUMN                As String = "F"         ' PLI Current Year Column
+Public Const CONST_PLI_LY_COLUMN                As String = "G"         ' PLI Last Year Column
+Public Const CONST_PLI_LLY_COLUMN               As String = "I"         ' PLI Year Before Last Year Column
+Public Const CONST_PLI_COMPARABLE_COLUMN        As String = "J"         ' Comparable Status Column
+Public Const CONST_PLI_COUNTRY_COLUMN           As String = "K"         ' Country Code Column
+Public Const CONST_PLI_COMPANY_PROPER_COLUMN    As String = "L"         ' Compnay Name in Proper Form Column
+Public Const CONST_PLI_REJECTION_REASON_COLUMN  As String = "M"         ' Rejection Reason Column
 
 '
-' Benchmark worksheet related layout
+' Benchmark(PLI) worksheet related layout constants
+' Constants related to the column offsets to locate the PLI ratios for each year
 '
-'
-' Either Advertisement or R&D filter criterion is specified
-'
-'Public Const BMK_AVG_YEAR                       As Integer = 0
-'Public Const BMK_CURRENT_YEAR                   As Integer = 1
-'Public Const BMK_LAST_YEAR                      As Integer = 2
-'Public Const BMK_YEAR_BEFORE_LAST_YEAR          As Integer = 4
-'Public Const BMK_COMPARABLE_OFFSET              As Integer = 5
-'
-' Notice: Report layout changed in FY2024; Very annoying
-' Date: 2024/5/7
-' Both Advertisement and R&D filter criteria are specified
-'
-'Public Const BMK_AVG_YEAR                       As Integer = 0
-'Public Const BMK_CURRENT_YEAR                   As Integer = 2
-'Public Const BMK_LAST_YEAR                      As Integer = 3
-'Public Const BMK_YEAR_BEFORE_LAST_YEAR          As Integer = 5
-'Public Const BMK_COMPARABLE_OFFSET              As Integer = 6
+Public Const CONST_BMK_AVG_YEAR_OFFSET                As Integer = 0
 
 '
 ' UserForm related constants
@@ -126,12 +105,15 @@ Public Const RR_BLANK                           As String = ""
 '
 ' Trial code to test switch between two sets of constants
 '
+Public Const DEFAULT_COLUMN_LAYOUT              As Integer = 0
 Public Const SINGLE_EXCLUSION_CRITERIA          As Integer = 1
 Public Const DUAL_EXCLUSION_CRITERIA            As Integer = 2
 Public Const PARAM1_SINGLE                      As String = "PARAM1 Single Criteria"
 Public Const PARAM1_DUAL                        As String = "PARAM1 Dual Criteria"
+Public Const PARAM1_DEFAULT                     As String = "PARAM1 Default"
 Public Const PARAM2_SINGLE                      As Integer = 1
 Public Const PARAM2_DUAL                        As Integer = 2
+Public Const PARAM2_DEFAULT                     As Integer = 0
 Public OP_PARAM1                                As String
 Public OP_PARAM2                                As Integer
 '
@@ -173,39 +155,50 @@ Public BMK_COMPARABLE_OFFSET                            As Integer
 '
 ' Description: Configure operation/layout parameters according to the number of screening criteria
 ' Keyboard Shortcut:
-' Code Date: 2024/6/13
+' Arguments
+'     sw: SINGLE_EXCLUSION_CRITERIA 單一排除條件報表格式配置
+'         DUAL_EXCLUSION_CRITERIA 雙重排除條件報表格式配置
+'         DEFAULT_COLUMN_LAYOUT or others 預設報表格式配置，根據上述 Screening_Worksheet 或是 Benchmark 格式配置
 '
 Public Sub configOpParam(sw As Integer)
     '
     ' Configure common operation parameters
     '
-    SCREENING_WORKSHEET_BASE_RANGE = "B3"
-    SCREENING_WORKSHEET_IDX_COLUMN = "A"
-    SCREENING_WORKSHEET_COMPANY_NAME_COLUMN = "B"
-    SCREENING_WORKSHEET_TRADE_COLUMN = "C"
-    SCREENING_WORKSHEET_COMPANY_DESCRIPTION_COLUMN = "D"
-    SCREENING_WORKSHEET_PNS_COLUMN = "E"
-    SCREENING_WORKSHEET_COUNTRY_CODE_COLUMN = "F"
-    
-    PLI_SHEET_COMPANY_COLUMN = "B"
-    PLI_SHEET_BASE_RANGE = "B15"
-    PLI_SHEET_AVERAGE_COLUMN = "D"
+    ' Screening Worksheet portion
+    SCREENING_WORKSHEET_BASE_RANGE = Osiris_Review_Constant.CONST_SCREENING_COMPANY_COLUMN & _
+                                     Osiris_Review_Constant.CONST_SCREENING_FIRST_DATA_ROW
+    SCREENING_WORKSHEET_IDX_COLUMN = Osiris_Review_Constant.CONST_IDX_COLUMN
+    SCREENING_WORKSHEET_COMPANY_NAME_COLUMN = Osiris_Review_Constant.CONST_COMPANY_NAME_COLUMN
+    SCREENING_WORKSHEET_TRADE_COLUMN = Osiris_Review_Constant.CONST_TRADE_COLUMN
+    SCREENING_WORKSHEET_COMPANY_DESCRIPTION_COLUMN = Osiris_Review_Constant.CONST_COMPANY_DESCRIPTION_COLUMN
+    SCREENING_WORKSHEET_PNS_COLUMN = Osiris_Review_Constant.CONST_PNS_COLUMN
+    SCREENING_WORKSHEET_COUNTRY_CODE_COLUMN = Osiris_Review_Constant.CONST_COUNTRY_CODE_COLUMN
+    '
+    ' Benchmark (Profit Level Index) worksheet portion
+    PLI_SHEET_COMPANY_COLUMN = Osiris_Review_Constant.CONST_PLI_COMPANY_COLUMN
+    PLI_SHEET_BASE_RANGE = Osiris_Review_Constant.CONST_PLI_COMPANY_COLUMN & _
+                           Osiris_Review_Constant.CONST_PLI_FIRST_DATA_ROW
+    Debug.Print "PLI benchmark worksheet base: " & PLI_SHEET_BASE_RANGE
+    PLI_SHEET_AVERAGE_COLUMN = Osiris_Review_Constant.CONST_PLI_AVERAGE_COLUMN
     '
     ' BMK_AVG_YEAR specifies the column offset for which quartile calculation is based
     ' on. See the implementation of the function Osiris_Review_Gadgets.DoComparableQuartile
     '
-    BMK_AVG_YEAR = 0
-   
+    BMK_AVG_YEAR = Osiris_Review_Constant.CONST_BMK_AVG_YEAR_OFFSET
+       
     '
-    ' Configure operation parameters dependent on
+    ' Configure operation parameters dependent on number of exclusion criteria
+    ' Note: Determining column layout according to number of exclusion criteria is not always
+    '       correct based on those Osiris query results. Added a default setting based on
+    '       CONST_XXXX definitions (2024/8/17)
     '
     If sw = Osiris_Review_Constant.SINGLE_EXCLUSION_CRITERIA Then
-        Debug.Print "Assigning golbal parameter OP_PARAM1, OP_PARAM2 to SINGLE mode..."
+        Debug.Print "Assigning column parsing related constants to SINGLE_EXCLUSION_CRITERIA mode..."
         STATUS_COLUMN_OFFSET = 12
         SCREENING_WORKSHEET_REVIEW_COLUMN = "L"
         SCREENING_WORKSHEET_STATUS_COLUMN = "M"
         SCREENING_WORKSHEET_COMMENT_COLUMN = "N"
-        
+
         PLI_SHEET_CY_COLUMN = "E"
         PLI_SHEET_LY_COLUMN = "F"
         PLI_SHEET_LLY_COLUMN = "H"
@@ -213,16 +206,16 @@ Public Sub configOpParam(sw As Integer)
         PLI_SHEET_COUNTRY_COLUMN = "J"
         PLI_SHEET_COMPANY_PROPER_COLUMN = "K"
         PLI_SHEET_REJECTION_REASON_COLUMN = "L"
-        
+
         BMK_CURRENT_YEAR = 1
         BMK_LAST_YEAR = 2
         BMK_YEAR_BEFORE_LAST_YEAR = 4
         BMK_COMPARABLE_OFFSET = 5
-        
+
         OP_PARAM1 = PARAM1_SINGLE
         OP_PARAM2 = PARAM2_SINGLE
-    Else
-        Debug.Print "Assigning golbal parameter OP_PARAM1, OP_PARAM2 to DUAL mode..."
+    ElseIf sw = Osiris_Review_Constant.DUAL_EXCLUSION_CRITERIA Then
+        Debug.Print "Assigning column parsing related constants to DUAL_EXCLUSION_CRITERIA mode..."
         STATUS_COLUMN_OFFSET = 13
         SCREENING_WORKSHEET_REVIEW_COLUMN = "M"
         SCREENING_WORKSHEET_STATUS_COLUMN = "N"
@@ -238,13 +231,43 @@ Public Sub configOpParam(sw As Integer)
         PLI_SHEET_COUNTRY_COLUMN = "K"
         PLI_SHEET_COMPANY_PROPER_COLUMN = "L"    ' proper(Company Name)
         PLI_SHEET_REJECTION_REASON_COLUMN = "M"
-        
+
         BMK_CURRENT_YEAR = 2
         BMK_LAST_YEAR = 3
         BMK_YEAR_BEFORE_LAST_YEAR = 5
         BMK_COMPARABLE_OFFSET = 6
-        
+
         OP_PARAM1 = PARAM1_DUAL
         OP_PARAM2 = PARAM2_DUAL
+    Else
+        Debug.Print "Assigning column parsing related constants to DEFAULT mode..."
+        '
+        ' Screening_Worksheet column layout related constants
+        '
+        STATUS_COLUMN_OFFSET = Asc(Osiris_Review_Constant.CONST_STATUS_COLUMN) - Asc(Osiris_Review_Constant.CONST_COMPANY_NAME_COLUMN)
+        SCREENING_WORKSHEET_REVIEW_COLUMN = Osiris_Review_Constant.CONST_MANUAL_REVIEW_COLUMN
+        SCREENING_WORKSHEET_STATUS_COLUMN = Osiris_Review_Constant.CONST_STATUS_COLUMN
+        SCREENING_WORKSHEET_COMMENT_COLUMN = Osiris_Review_Constant.CONST_COMMENT_COLUMN
+        '
+        ' Benchmark (PLI) worksheet column layout related constants
+        PLI_SHEET_CY_COLUMN = Osiris_Review_Constant.CONST_PLI_CY_COLUMN
+        PLI_SHEET_LY_COLUMN = Osiris_Review_Constant.CONST_PLI_LY_COLUMN
+        PLI_SHEET_LLY_COLUMN = Osiris_Review_Constant.CONST_PLI_LLY_COLUMN
+        '
+        ' Additional columns for comparables and rejected companies in TP reports
+        PLI_SHEET_COMPARABLE_COLUMN = Osiris_Review_Constant.CONST_PLI_COMPARABLE_COLUMN
+        PLI_SHEET_COUNTRY_COLUMN = Osiris_Review_Constant.CONST_PLI_COUNTRY_COLUMN
+        PLI_SHEET_COMPANY_PROPER_COLUMN = Osiris_Review_Constant.CONST_PLI_COMPANY_PROPER_COLUMN
+        PLI_SHEET_REJECTION_REASON_COLUMN = Osiris_Review_Constant.CONST_PLI_REJECTION_REASON_COLUMN
+        '
+        ' Column defitions to locate PLI ratios of each year in Benchmark worksheet
+        BMK_CURRENT_YEAR = Asc(Osiris_Review_Constant.CONST_PLI_CY_COLUMN) - Asc(Osiris_Review_Constant.CONST_PLI_AVERAGE_COLUMN)
+        BMK_LAST_YEAR = Asc(Osiris_Review_Constant.CONST_PLI_LY_COLUMN) - Asc(Osiris_Review_Constant.CONST_PLI_AVERAGE_COLUMN)
+        BMK_YEAR_BEFORE_LAST_YEAR = Asc(Osiris_Review_Constant.CONST_PLI_LLY_COLUMN) - Asc(Osiris_Review_Constant.CONST_PLI_AVERAGE_COLUMN)
+        BMK_COMPARABLE_OFFSET = Asc(Osiris_Review_Constant.CONST_PLI_COMPARABLE_COLUMN) - Asc(Osiris_Review_Constant.CONST_PLI_AVERAGE_COLUMN)
+        '
+        ' Global operation parameter string and integer for operation mode display only
+        OP_PARAM1 = Osiris_Review_Constant.PARAM1_DEFAULT
+        OP_PARAM2 = Osiris_Review_Constant.PARAM2_DEFAULT
     End If
 End Sub
