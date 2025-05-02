@@ -1,11 +1,12 @@
 Attribute VB_Name = "Osiris_Review_Constant"
 '
-'   Description: A module listing  Osiris data review associated constants
+'   Description: A module listing Osiris data review associated constants
 '
-'   Date: 2024/9/5
+'   Date: 2025/4/23
 '   Author: maoyi.fan@yapro.com.tw
-'   Ver.: 0.1k
+'   Ver.: 0.1l
 '   Revision History:
+'       - 2025/4/23, 0.1l: Supported comparable state and review comment from last year's Screening_Worksheet
 '       - 2024/9/5,  0.1k: Unified the way to handle different report layout due to its dynamic behavior
 '       - 2024/8/17, 0.1j: Column layout changes all the time, adjust data parsing column variables based on
 '                          CONST_XXXX. Walk through all these CONST definitions before a new comparables
@@ -41,13 +42,16 @@ Public Const CONST_SCREENING_COMPANY_COLUMN     As String = "B"
 Public Const CONST_SCREENING_FIRST_DATA_ROW     As String = "3"
 Public Const CONST_IDX_COLUMN                   As String = "A"
 Public Const CONST_COMPANY_NAME_COLUMN          As String = "B"         ' NAME
-Public Const CONST_TRADE_COLUMN                 As String = "G"         ' TRADE_DESCRIPTION_EN
-Public Const CONST_COMPANY_DESCRIPTION_COLUMN   As String = "M"         ' DESCRIPTION_HISTORY
-Public Const CONST_PNS_COLUMN                   As String = "L"         ' PRODUCTS_SERVICES
-Public Const CONST_COUNTRY_CODE_COLUMN          As String = "C"         ' COUNTRY_ISO_CODE
-Public Const CONST_MANUAL_REVIEW_COLUMN         As String = "K"         ' MANUAL_REVIEW
-Public Const CONST_STATUS_COLUMN                As String = "Q"         ' STATUS
-Public Const CONST_COMMENT_COLUMN               As String = "R"         ' review Comments column
+Public Const CONST_TRADE_COLUMN                 As String = "C"         ' TRADE_DESCRIPTION_EN
+Public Const CONST_COMPANY_DESCRIPTION_COLUMN   As String = "D"         ' DESCRIPTION_HISTORY
+Public Const CONST_PNS_COLUMN                   As String = "E"         ' PRODUCTS_SERVICES
+Public Const CONST_COUNTRY_CODE_COLUMN          As String = "F"         ' COUNTRY_ISO_CODE
+Public Const CONST_MANUAL_REVIEW_COLUMN         As String = "M"         ' MANUAL_REVIEW, this column might be changed
+                                                                        ' due to the selection of rejection criteria;
+                                                                        ' This column stores the record classification or rejection resaon
+Public Const CONST_STATUS_COLUMN                As String = "N"         ' STATUS. This column stores if this record is a comparable or not
+Public Const CONST_COMMENT_COLUMN               As String = "O"         ' review Comments column. This column stores a general review comment
+Public Const CONST_COMPARABLE_LY_COLUMN         As String = "P"         ' Comparable last year Yes/No/NA
 
 '
 ' STATUS_COLUMN_OFFSET stores the offset from CONST_COMPANY_NAME_COLUMN to the Status column
@@ -61,8 +65,8 @@ Public Const CONST_COMMENT_COLUMN               As String = "R"         ' review
 Public Const CONST_PLI_COMPANY_COLUMN           As String = "B"
 Public Const CONST_PLI_FIRST_DATA_ROW           As String = "15"
 '
-' Notice: PLI(Benchmark) Report layout changed
-' Date: 2024/5/7
+' Notice: PLI(Benchmark) Report layout; It varies from company to company, from year to year
+' Date: 2025/2/26
 '
 Public Const CONST_PLI_AVERAGE_COLUMN           As String = "D"         ' PLI Average Column
 Public Const CONST_PLI_CY_COLUMN                As String = "F"         ' PLI Current Year Column
@@ -72,6 +76,7 @@ Public Const CONST_PLI_COMPARABLE_COLUMN        As String = "J"         ' Compar
 Public Const CONST_PLI_COUNTRY_COLUMN           As String = "K"         ' Country Code Column
 Public Const CONST_PLI_COMPANY_PROPER_COLUMN    As String = "L"         ' Compnay Name in Proper Form Column
 Public Const CONST_PLI_REJECTION_REASON_COLUMN  As String = "M"         ' Rejection Reason Column
+
 
 '
 ' Benchmark(PLI) worksheet related layout constants

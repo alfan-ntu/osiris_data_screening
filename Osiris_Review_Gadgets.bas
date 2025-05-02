@@ -19,6 +19,21 @@ Attribute VB_Name = "Osiris_Review_Gadgets"
 '   ToDo's:
 '       1)
 '
+'   Function List:
+'        1. Sub setupCountryCodeDictionary(): Setup a country code dictionary
+'        2. Function findCountryNameInChinese(ByVal cntyISOCode As String) As String: Lookup country name by country code
+'        3. Function DoComparableQuartile(benchmarkRange As Range, yearIndex As Integer) As Quartile_Data_Type: Calculate quartiles of PLI's
+'        4. Function ScreenStatistics(ByVal screenWorksheet As Worksheet) As Screening_Statistics: Do comparables state statistics
+'        5. Function FindMinimumRow(ByVal targetRange As Range) As Long: Self-explanatory
+'        6. Function FindMaximumRow(ByVal targetRange As Range) As Long: Self-explanatory
+'        7. Function ReturnStateLabel(ByVal comparableState As String) As String: Special case handling of the non-ASCII symbols in Osiris's report
+'        8. Function PLILabelToSwitch(PLILabel As String) As String: Conversion from "營業淨利率"/"成本及營業費用淨利率" to "Operating Margin"/"Net Cost Plus"
+'        9. Public Function CleanMessyString(ByVal Str As String) As String: Remove non-printable characters from the original string
+'        10. Function Col_Letter(lngCol As Long) As String: Return a column letter of the given column number
+'        11. Public Function FindNumberOfCompanies() As Integer: Returns the number of companies in the Screening_Worksheet
+'        12. Public Function findFirstUnscreenRecord() As Long: Self-explanatory
+'        13. Public Function recordYetReviewed(stateCode As String): Self-explanatory
+'
 Option Explicit
 
 '
@@ -156,8 +171,9 @@ Function DoComparableQuartile(benchmarkRange As Range, yearIndex As Integer) As 
             comparableCount = comparableCount + 1
         End If
     Next r
-    
-    ' Update customized variable of data type Quartile_Data_Type
+    '
+    ' Update customized variable of data type Quartile_Data_Type; statistics data is stored in the array PLI
+    '
     If comparableCount > 0 Then
         With q
             .minQuartile = WorksheetFunction.Quartile(PLI, 0)
@@ -184,9 +200,9 @@ End Function
 ' Coding Date: 2024/4/15
 '
 Function ScreenStatistics(ByVal screenWorksheet As Worksheet) As Screening_Statistics
-    Dim ss As Screening_Statistics
-    Dim selectedRange As Range
-    Dim lRow, r As Long
+    Dim ss              As Screening_Statistics
+    Dim selectedRange   As Range
+    Dim lRow, r         As Long
     
     Set selectedRange = screenWorksheet.Range(Osiris_Review_Constant.SCREENING_WORKSHEET_BASE_RANGE)
     lRow = FindMaximumRow(selectedRange)
@@ -321,7 +337,7 @@ Public Function CleanMessyString(ByVal Str As String) As String
 End Function
 
 '
-' Description: returns column letter for a given column number
+' Description: returns column letter of the given column number
 ' Source: https://stackoverflow.com/questions/12796973/function-to-convert-column-number-to-letter
 '
 Function Col_Letter(lngCol As Long) As String
@@ -375,7 +391,7 @@ Public Function findFirstUnscreenRecord() As Long
 '        If AscW(compStat.Value) = Osiris_Review_Constant.UNICODE_CHECK Then
         If recordYetReviewed(compStat.Value) Then
             firstRecordFound = True
-            Debug.Print "Unscreened record: " & CStr(r)
+            Debug.Print "Unscreened record row: " & CStr(r)
             Exit For
         End If
     Next r

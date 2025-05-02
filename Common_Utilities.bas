@@ -3,10 +3,11 @@ Attribute VB_Name = "Common_Utilities"
 '   Description: A group of funtion utilities or gadgets common to all Excel workbooks, primarily
 '                to support data screening of Osiris comparable company results
 '
-'   Date: 2024/6/15
+'   Date: 2025/4/24
 '   Author: maoyi.fan@yapro.com.tw
-'   Ver.: 0.1h
+'   Ver.: 0.1l
 '   Revision History:
+'       - 2025/4/24, 0.1l: Supported comparable state and review comment from last year's Screening_Worksheet
 '       - 2024/6/15, 0.1h: Adjusted constant arrangement to accommodate dual operation conditions
 '       - 2024/4/15, 0.1c: Moved Osiris data screening stuffs to PLIDetailsForm to make this Common_Utilities
 '                          as general as possible
@@ -73,7 +74,6 @@ Sub CompanyOMDetails()
     
     PLIDetailsForm.comparableReview (CONST_OM_PLI)
 End Sub
-
 '
 ' Description: Go to the first worksheet of the active workbook
 ' Keyboard Shortcut: (Ctrl-Shift-B)
@@ -85,8 +85,6 @@ Attribute GotoFirstSheet.VB_ProcData.VB_Invoke_Func = " \n14"
     Debug.Print "GotoFirstSheet macro is executed.."
     ActiveWorkbook.Worksheets(1).Activate
 End Sub
-
-
 '
 ' Description: listing all the worksheet names in
 ' Shortcut: Ctrl-Shift-L
@@ -258,3 +256,68 @@ Sub saveWorkbook(Optional wbName As String)
         Debug.Print "Active workbook " & ThisWorkbook.Name & " updated!"
     End If
 End Sub
+'
+' Description: This subroutine finds the location of Personal Workbook
+'
+Sub Find_Personal_Macro_Workbook()
+    Dim path As String
+    path = Application.StartupPath
+    Debug.Print "My personal workbook stores at: " & path
+End Sub
+'
+' Description: Get the next letter in alphabet order
+'
+Public Function NextChar(ch As String) As String
+    If Len(ch) <> 1 Then
+        NextChar = ""
+        Exit Function
+    End If
+    
+    Dim asciiValue As Integer
+    asciiValue = Asc(UCase(ch))
+    
+    If asciiValue >= 65 And asciiValue < 90 Then   ' A to Y
+        NextChar = Chr(asciiValue + 1)
+    ElseIf asciiValue = 90 Then                   ' Z wraps around
+        NextChar = "A"
+    Else
+        NextChar = ""  ' Not a valid uppercase letter
+    End If
+End Function
+'
+'
+'
+Sub testSplitFullpathName()
+    Dim fullPathName    As String
+    fullPathName = "C:\Users\Maoyi Fan\雅博會計師事務所\Ivy Chiang - maoyi_ivy\一蘭拉麵\112年度\可比較公司資料\一蘭_2023_重跑_廣告研發1%_working-v2.xlsx"
+    
+    Debug.Print "Directory name: " & getDirectory(fullPathName)
+    Debug.Print "File name: " & getFileName(fullPathName)
+
+End Sub
+
+'
+' Description: Get the directory part of a full path name
+'
+Public Function getDirectory(fullPath As String) As String
+    Dim lastBackslash   As Integer
+    
+    lastBackslash = InStrRev(fullPath, "\")
+    If lastBackslash > 0 Then
+        getDirectory = Left(fullPath, lastBackslash)
+    Else
+        getDirectory = "Null"
+    End If
+End Function
+'
+' Description: Get the file name of a full path name
+'
+Public Function getFileName(fullPath As String) As String
+    Dim lastBackslash   As Integer
+    lastBackslash = InStrRev(fullPath, "\")
+    If lastBackslash > 0 Then
+        getFileName = Mid(fullPath, lastBackslash + 1)
+    Else
+        getFileName = "Null"
+    End If
+End Function

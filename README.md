@@ -22,12 +22,14 @@ As of the time this document is edited, this program includes the following VBA 
 3. Common_Utilities.bas: This file includes the actual anchors that keypad shortcuts defined in ThisWorkbook.cls hooks up. It also includes other VBA utilities common to all Excel file instances.
 4. Osiris_Review_Constant.bas: This file is a constants container defining VBA constants for operation of this data screening tool, especially those related to the worksheet layout definitions. This file includes string constants to build the GUI as well.
 5. Osiris_Review_Gadgets.bas: This VBA file includes customized data types, Quartile calculation routine, screening statistics routine, worksheet geometry support utilities, string operation routines... , etc.
-<img src="./img/GUI.png" width=""> 
+<img src="./img/GUI_01l.png" width=""> 
+6. Screening_Worksheet_Last_Year.frm: A supporting GUI to retrieve comparables states and comments from last year's Screening Worksheet
 
 ## Discussions/History
 1. ver. 0.1e implemented basic functionalities using basic coding skills. Migration to a class based implementation may be a way to an organized program when more complicated functionalities are necessary.
 2. ver. 0.1f ensure Screening_Worksheet, OM_Screening, NCP_Screening exist
 3. ver. 0.1j Navigation among different companies according to the selected comparable status
+4. ver. 0.1l Check comparable states and comments of last year
 
 ## ToDo's
-1. Check potential comparables of the year agains comparables status of the last or previous years
+1. Check potential comparables of the year against comparables status of the last or previous years(Done in v. 0.1l)

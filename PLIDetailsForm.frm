@@ -1,10 +1,10 @@
 VERSION 5.00
 Begin {C62A69F0-16DC-11CE-9E98-00AA00574A4F} PLIDetailsForm 
    Caption         =   "Osiris 可比較公司篩選工具 (雅博會計師事務所)"
-   ClientHeight    =   10092
+   ClientHeight    =   10524
    ClientLeft      =   108
    ClientTop       =   456
-   ClientWidth     =   12732
+   ClientWidth     =   12804
    OleObjectBlob   =   "PLIDetailsForm.frx":0000
    StartUpPosition =   1  'CenterOwner
 End
@@ -100,14 +100,127 @@ Sub comparableReview(PLI_Switch As String)
     
 End Sub
 '
+' Description: Preset the columns additional to 列表(2)
+'
+'
+Sub presetScreeningWorksheet(ByVal pathToWorkbookLastYear As String, ByVal companyColLastYear As String, _
+                             ByVal comparableColLastYear As String, ByVal reviewCommentColLastYear As String)
+    Dim tgtWs                   As Worksheet
+    Dim lRow, r                 As Long
+    Dim targetRange             As Range
+    Dim tmpInt                  As Integer
+    Dim msgResponse
+    Dim directoryStr            As String
+    Dim fileNameStr             As String
+
+    Dim previousWorkbook        As Workbook
+    Dim workbookLastYear        As Workbook
+    Dim worksheetLastYear       As String       ' fullpath name for VLOOKUP queries, i.e. specific syntax for VLOOKUP
+    Dim screeningSheetLastYear  As Range
+    Dim tmpStr                  As String
+    Dim vlookupString           As String
+    
+    ' Set targetRange of Screening_Worksheet
+    Set targetRange = Sheets(Osiris_Review_Constant.SCREENING_SHEET).Range(Osiris_Review_Constant.CONST_COMPANY_NAME_COLUMN & _
+                             CStr(Osiris_Review_Constant.CONST_SCREENING_FIRST_DATA_ROW))
+    lRow = Osiris_Review_Gadgets.FindMaximumRow(targetRange)
+'    Debug.Print "Number of last row: " & CStr(lRow)
+'    Debug.Print "Path to workbook last year: " & pathToWorkbookLastYear
+    
+    ' Set column headers
+    tmpInt = CInt(Osiris_Review_Constant.CONST_SCREENING_FIRST_DATA_ROW) - 1
+    Set targetRange = Sheets(Osiris_Review_Constant.SCREENING_SHEET).Range(Osiris_Review_Constant.CONST_COMMENT_COLUMN & CStr(tmpInt))
+    With targetRange
+        .Value = "Comment"
+        .ColumnWidth = 30
+        .HorizontalAlignment = xlCenter
+        .VerticalAlignment = xlCenter
+        .WrapText = True
+    End With
+    Set targetRange = targetRange.Offset(0, 1)
+    With targetRange
+        .Value = "Comparable Last Year"
+        .ColumnWidth = 12
+        .HorizontalAlignment = xlCenter
+        .VerticalAlignment = xlCenter
+        .WrapText = True
+    End With
+    Set targetRange = targetRange.Offset(0, 1)
+    With targetRange
+        .Value = "Comment Last Year"
+        .ColumnWidth = 30
+        .HorizontalAlignment = xlCenter
+        .VerticalAlignment = xlCenter
+        .WrapText = True
+    End With
+
+    If pathToWorkbookLastYear = "" Or _
+        companyColLastYear = "" Or _
+        comparableColLastYear = "" Or _
+        reviewCommentColLastYear = "" Then
+        msgResponse = MsgBox("去年可比較公司篩選資料尚未設定!", vbOKOnly, "去年可比較公司資料")
+        Set targetRange = Nothing
+        Exit Sub
+    Else
+'
+'       Populate VLOOKUP formula if screening sheet of last year is specified
+'
+        directoryStr = Common_Utilities.getDirectory(pathToWorkbookLastYear)
+        fileNameStr = Common_Utilities.getFileName(pathToWorkbookLastYear)
+        worksheetLastYear = directoryStr & "[" & fileNameStr & "]" & Osiris_Review_Constant.SCREENING_SHEET
+        
+        Set previousWorkbook = ActiveWorkbook
+        Set workbookLastYear = Workbooks.Open(pathToWorkbookLastYear)
+        Set screeningSheetLastYear = workbookLastYear.Sheets(Osiris_Review_Constant.SCREENING_SHEET).Range( _
+            Osiris_Review_Constant.CONST_COMPANY_NAME_COLUMN & CStr(Osiris_Review_Constant.CONST_SCREENING_FIRST_DATA_ROW))
+        tmpInt = Osiris_Review_Gadgets.FindMaximumRow(screeningSheetLastYear)
+        tmpStr = ",'" & worksheetLastYear & "'!$B$3:$N$" & CStr(tmpInt) & ","
+        ' Debug.Print "rangeLastYear: " & tmpStr & " of " & CStr(tmpInt) & " potential comparable companies"
+        ' resume back to the workbook of current year
+        workbookLastYear.Close
+        previousWorkbook.Activate
+        Set tgtWs = Worksheets(Osiris_Review_Constant.SCREENING_SHEET)
+        For r = Int(Osiris_Review_Constant.CONST_SCREENING_FIRST_DATA_ROW) To lRow
+            ' populate comparable state from last year worksheet
+            Set targetRange = tgtWs.Cells(r, Osiris_Review_Constant.CONST_COMMENT_COLUMN).Offset(0, 1)
+            tmpInt = Asc(comparableColLastYear) - Asc(companyColLastYear) + 1
+            vlookupString = "=IF(ISNA(VLOOKUP(B" & CStr(r) & tmpStr & CStr(tmpInt) & ", FALSE)), " & Chr(34) & "N/A" & Chr(34) & _
+                    ",VLOOKUP(B" & CStr(r) & tmpStr & CStr(tmpInt) & ", FALSE))"
+            targetRange.Formula = vlookupString
+'            Debug.Print "Comparable vlookup: " & vlookupString
+            
+            ' populate review comment of last year
+            Set targetRange = tgtWs.Cells(r, Osiris_Review_Constant.CONST_COMMENT_COLUMN).Offset(0, 2)
+            tmpInt = Asc(reviewCommentColLastYear) - Asc(companyColLastYear) + 1
+            vlookupString = "=IF(ISNA(VLOOKUP(B" & CStr(r) & tmpStr & CStr(tmpInt) & ", FALSE)), " & Chr(34) & "N/A" & Chr(34) & _
+                    ",VLOOKUP(B" & CStr(r) & tmpStr & CStr(tmpInt) & ", FALSE))"
+            targetRange.Formula = vlookupString
+'            Debug.Print "Review comment vlookup: " & vlookupString
+        Next r
+        Set screeningSheetLastYear = Nothing
+        Set workbookLastYear = Nothing
+
+    End If
+    Set targetRange = Nothing
+End Sub
+'
 ' Description: Ensure the Screening_Worksheet exists by copying Osiris_Review_Constant.MASTER_SHEET, 列表 (2),
-'              if it doesn't and set the the first record as the selected target
+'              if it doesn't and set the the first record as the selected target;
+'
 ' Coding Date: 2024/9/5
 '
+' ToDo: Prompt to get worksheets of last year to populate formula to retrieve comparable states of last year
+'
 Sub ensureScreeningWorksheetExists()
-    Dim worksheetIndex      As Integer
-    Dim targetRange         As Range
-    Dim tmpInt              As Integer
+    Dim worksheetIndex              As Integer
+    Dim targetRange                 As Range
+    Dim tmpInt                      As Integer
+    Dim lRow                        As Long
+    
+    Dim pathToWorkbookLastYear      As String
+    Dim companyColLastYear          As String
+    Dim comparableColLastYear       As String
+    Dim reviewCommentColLastYear    As String
     
     If Common_Utilities.worksheetExists(Osiris_Review_Constant.SCREENING_SHEET) Then
         Debug.Print "Screening worksheet, " & Osiris_Review_Constant.SCREENING_SHEET & " exists!"
@@ -118,11 +231,24 @@ Sub ensureScreeningWorksheetExists()
         worksheetIndex = Sheets(Osiris_Review_Constant.MASTER_SHEET).Index
         Sheets(worksheetIndex + 1).Name = Osiris_Review_Constant.SCREENING_SHEET
         Debug.Print "Screening worksheet, " & Osiris_Review_Constant.SCREENING_SHEET & " created!"
+        '
+        ' Prompt user to select screening workbook of last year
+        ' (Under constructuion!)
+        '
+        Screening_Worksheet_Last_Year.Show vbModal
+        pathToWorkbookLastYear = Screening_Worksheet_Last_Year.pathToWorkbookLastYear
+        companyColLastYear = Screening_Worksheet_Last_Year.companyNameColumn
+        comparableColLastYear = Screening_Worksheet_Last_Year.comparableStateColumn
+        reviewCommentColLastYear = Screening_Worksheet_Last_Year.reviewCommentColumn
+        Unload Screening_Worksheet_Last_Year
+        
         tmpInt = CInt(Osiris_Review_Constant.CONST_SCREENING_FIRST_DATA_ROW) - 1
-        ' add the comment header
-        Set targetRange = Sheets(Osiris_Review_Constant.SCREENING_SHEET).Range(Osiris_Review_Constant.CONST_COMMENT_COLUMN & CStr(tmpInt))
-        targetRange.HorizontalAlignment = xlHAlignCenter
-        targetRange.Value = "Comment"
+        
+        ' preset additional columns in Screening_Worksheet
+        Call presetScreeningWorksheet(pathToWorkbookLastYear, companyColLastYear, _
+                                 comparableColLastYear, reviewCommentColLastYear)
+                                 
+                                 
         ' set the highlighted range
         Call Common_Utilities.SetColumnWidth(Osiris_Review_Constant.CONST_COMMENT_COLUMN, 30)
         Set targetRange = Sheets(Osiris_Review_Constant.SCREENING_SHEET).Range(Osiris_Review_Constant.SCREENING_WORKSHEET_BASE_RANGE)
@@ -298,6 +424,8 @@ Sub comparableReviewByRow(ByVal PLI_Switch As String, ByVal currentRow As Long)
     Dim PLI_Title, PLIMinus1_Title, PLIMinus2_Title             As String
     Dim PLI_average, PLI, PLI_minus_1, PLI_minus_2              As String
     Dim comparableStateLabel, rejectionReason                   As String
+    Dim comparableLastYear                                      As String
+    Dim rejectReasonLastYear                                    As String
     Dim commentText                                             As String
     Dim lRow, r                                                 As Long
     Dim screenStat                                              As Screening_Statistics
@@ -354,6 +482,9 @@ Sub comparableReviewByRow(ByVal PLI_Switch As String, ByVal currentRow As Long)
     comparableStateLabel = ActiveSheet.Cells(currentRow, Osiris_Review_Constant.SCREENING_WORKSHEET_STATUS_COLUMN).Value
     comparableStateLabel = Osiris_Review_Gadgets.ReturnStateLabel(comparableStateLabel)
     rejectionReason = ActiveSheet.Cells(currentRow, Osiris_Review_Constant.SCREENING_WORKSHEET_REVIEW_COLUMN).Value
+'    comparableLastYear = ActiveSheet.Cells(currentRow, Osiris_Review_Constant.CONST_COMPARABLE_LY_COLUMN).Value
+    comparableLastYear = ActiveSheet.Cells(currentRow, Osiris_Review_Constant.SCREENING_WORKSHEET_COMMENT_COLUMN).Offset(0, 1).Value
+    rejectReasonLastYear = ActiveSheet.Cells(currentRow, Osiris_Review_Constant.SCREENING_WORKSHEET_COMMENT_COLUMN).Offset(0, 2).Value
     ' sanity check before calling AscW(Char) function
     If rejectionReason = "" Then
         rejectionReason = " "
@@ -375,6 +506,8 @@ Sub comparableReviewByRow(ByVal PLI_Switch As String, ByVal currentRow As Long)
     Me.tbBusinessDescription.Value = businessDescription
     Me.tbProductAndService.Value = productAndService
     Me.tbComment.Value = commentText
+    Me.tbComparableLastYear.Value = comparableLastYear
+    Me.txtBoxCommentLastYear.Value = rejectReasonLastYear
     Me.cboxComparableState.Value = comparableStateLabel
     Me.lblPLI.Caption = PLIString
     Me.tbPLIAverage.Value = PLI_average
@@ -757,6 +890,10 @@ Function retrieveOriginalRecord(ByVal srcWorksheet As Worksheet, ByVal companyNa
     Set tempRange = Nothing
 End Function
 
+
+Private Sub Label9_Click()
+
+End Sub
 
 '
 ' Description: close the UserForm when ESC key is pressed when the focus is on Business Description
