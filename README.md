@@ -30,6 +30,7 @@ As of the time this document is edited, this program includes the following VBA 
 2. ver. 0.1f ensure Screening_Worksheet, OM_Screening, NCP_Screening exist
 3. ver. 0.1j Navigation among different companies according to the selected comparable status
 4. ver. 0.1l Check comparable states and comments of last year
+5. ver. 0.1m Supporting generation of '可比較公司財務資料' worksheet after the comparables review finishes.
 
 ## ToDo's
 1. Check potential comparables of the year against comparables status of the last or previous years(Done in v. 0.1l)
