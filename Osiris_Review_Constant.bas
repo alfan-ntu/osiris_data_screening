@@ -25,9 +25,9 @@ Option Explicit
 '
 Public Const CONST_OM_PLI                       As String = "Operating Margin"
 Public Const CONST_NCP_PLI                      As String = "Net Cost Plus"
-Public Const OM_DETAILS_SHEET                   As String = "Benchmark 1"           ' confirm this before starting any new comparables review
+Public Const OM_DETAILS_SHEET                   As String = "Benchmark 1"               ' confirm this before starting any new comparables review
 Public Const OM_COMPARABLE_SHEET                As String = "OM_Screening"
-Public Const NCP_DETAILS_SHEET                  As String = "Benchmark 4"           ' confirm this before starting any new comparables review
+Public Const NCP_DETAILS_SHEET                  As String = "Benchmark 4"               ' confirm this before starting any new comparables review
 Public Const NCP_COMPARABLE_SHEET               As String = "NCP_Screening"
 Public Const CONST_OM_PLI_LABEL                 As String = "營業淨利率"
 Public Const CONST_NCP_PLI_LABEL                As String = "成本及營業費用淨利率"
@@ -40,18 +40,18 @@ Public Const MASTER_SHEET                       As String = "列表 (2)"
 Public Const CONST_BASE_RANGE                   As String = "B3"
 Public Const CONST_SCREENING_COMPANY_COLUMN     As String = "B"
 Public Const CONST_SCREENING_FIRST_DATA_ROW     As String = "3"
-Public Const CONST_IDX_COLUMN                   As String = "A"
-Public Const CONST_COMPANY_NAME_COLUMN          As String = "B"         ' NAME
-Public Const CONST_TRADE_COLUMN                 As String = "C"         ' TRADE_DESCRIPTION_EN
-Public Const CONST_COMPANY_DESCRIPTION_COLUMN   As String = "D"         ' DESCRIPTION_HISTORY
-Public Const CONST_PNS_COLUMN                   As String = "E"         ' PRODUCTS_SERVICES
-Public Const CONST_COUNTRY_CODE_COLUMN          As String = "F"         ' COUNTRY_ISO_CODE
-Public Const CONST_MANUAL_REVIEW_COLUMN         As String = "M"         ' MANUAL_REVIEW, this column might be changed
-                                                                        ' due to the selection of rejection criteria;
+Public Const CONST_IDX_COLUMN                   As String = "A"         ' IDX
+Public Const CONST_COMPANY_NAME_COLUMN          As String = "B"         ' COMPANY NAME
+Public Const CONST_TRADE_COLUMN                 As String = "E"         ' TRADE_DESCRIPTION_EN
+Public Const CONST_COMPANY_DESCRIPTION_COLUMN   As String = "G"         ' DESCRIPTION_HISTORY
+Public Const CONST_PNS_COLUMN                   As String = "F"         ' PRODUCTS_SERVICES
+Public Const CONST_COUNTRY_CODE_COLUMN          As String = "H"         ' COUNTRY_ISO_CODE
+Public Const CONST_MANUAL_REVIEW_COLUMN         As String = "K"         ' MANUAL_REVIEW, this column might be changed
+                                                                        ' due to different selections of rejection criteria;
                                                                         ' This column stores the record classification or rejection resaon
-Public Const CONST_STATUS_COLUMN                As String = "N"         ' STATUS. This column stores if this record is a comparable or not
-Public Const CONST_COMMENT_COLUMN               As String = "O"         ' review Comments column. This column stores a general review comment
-Public Const CONST_COMPARABLE_LY_COLUMN         As String = "P"         ' Comparable last year Yes/No/NA
+Public Const CONST_STATUS_COLUMN                As String = "L"         ' STATUS. This column stores if this record is a comparable or not
+Public Const CONST_COMMENT_COLUMN               As String = "M"         ' review Comments column. This column stores a general review comment
+Public Const CONST_COMPARABLE_LY_COLUMN         As String = "N"         ' Comparable last year Yes/No/NA
 
 '
 ' STATUS_COLUMN_OFFSET stores the offset from CONST_COMPANY_NAME_COLUMN to the Status column
@@ -59,30 +59,30 @@ Public Const CONST_COMPARABLE_LY_COLUMN         As String = "P"         ' Compar
 ' layout of the report! (2024/9/4)
 '
 ' Layout constants associated with PLI Benchmark worksheet
-' PLI Benchmark worksheet means OM_COMPARABLE_SHEET in case of Operating Margin review,
-'                               NCP_COMPARABLE_SHEET in case of Net Cost Plus review
+' PLI Benchmark worksheet means OM_COMPARABLE_SHEET(Benchmark 1) in case of Operating Margin review,
+'                               NCP_COMPARABLE_SHEET(Benchmark 4) in case of Net Cost Plus review
 '
 Public Const CONST_PLI_COMPANY_COLUMN           As String = "B"
 Public Const CONST_PLI_FIRST_DATA_ROW           As String = "15"
 '
 ' Notice: PLI(Benchmark) Report layout; It varies from company to company, from year to year
+'         OM: Worksheet Benchmark 1; NCP: Worksheet Benchmark 4
 ' Date: 2025/2/26
 '
 Public Const CONST_PLI_AVERAGE_COLUMN           As String = "D"         ' PLI Average Column
-Public Const CONST_PLI_CY_COLUMN                As String = "F"         ' PLI Current Year Column
-Public Const CONST_PLI_LY_COLUMN                As String = "G"         ' PLI Last Year Column
-Public Const CONST_PLI_LLY_COLUMN               As String = "I"         ' PLI Year Before Last Year Column
-Public Const CONST_PLI_COMPARABLE_COLUMN        As String = "J"         ' Comparable Status Column
-Public Const CONST_PLI_COUNTRY_COLUMN           As String = "K"         ' Country Code Column
-Public Const CONST_PLI_COMPANY_PROPER_COLUMN    As String = "L"         ' Compnay Name in Proper Form Column
-Public Const CONST_PLI_REJECTION_REASON_COLUMN  As String = "M"         ' Rejection Reason Column
-
+Public Const CONST_PLI_CY_COLUMN                As String = "E"         ' PLI Current Year Column
+Public Const CONST_PLI_LY_COLUMN                As String = "F"         ' PLI Last Year Column
+Public Const CONST_PLI_LLY_COLUMN               As String = "H"         ' PLI Year Before Last Year Column
+Public Const CONST_PLI_COMPARABLE_COLUMN        As String = "I"         ' Comparable Status Column
+Public Const CONST_PLI_COUNTRY_COLUMN           As String = "J"         ' Country Code Column
+Public Const CONST_PLI_COMPANY_PROPER_COLUMN    As String = "K"         ' Compnay Name in Proper Form Column
+Public Const CONST_PLI_REJECTION_REASON_COLUMN  As String = "L"         ' Rejection Reason Column
 
 '
 ' Benchmark(PLI) worksheet related layout constants
 ' Constants related to the column offsets to locate the PLI ratios for each year
 '
-Public Const CONST_BMK_AVG_YEAR_OFFSET                As Integer = 0
+Public Const CONST_BMK_AVG_YEAR_OFFSET          As Integer = 0
 
 '
 ' UserForm related constants

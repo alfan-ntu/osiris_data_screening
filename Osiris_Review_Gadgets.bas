@@ -2,10 +2,11 @@ Attribute VB_Name = "Osiris_Review_Gadgets"
 '
 '   Description: A module containing Osiris data review associated gadgets
 '
-'   Date: 2024/6/16
+'   Date: 2026/8/13
 '   Author: maoyi.fan@yapro.com.tw
-'   Ver.: 0.1i
+'   Ver.: 0.1m
 '   Revision History:
+'       - 2026/8/13, 0.1m: Added new gadget 'DoFinancialDataQuartile' supporting generating '可比較公司財務資料' worksheet
 '       - 2024/6/16, 0.1i: Adjusted record 'Status' related process due to inconsistent report format
 '       - 2024/6/15, 0.1h: Adjusted constant arrangement to accommodate dual operation conditions
 '       - 2024/6/13, 0.1g: Fixed the issue jumping to the first unscreened record when all records have been screened
@@ -193,7 +194,23 @@ Function DoComparableQuartile(benchmarkRange As Range, yearIndex As Integer) As 
     End If
     DoComparableQuartile = q
 End Function
+'
+' Description: Do range quartile calculation
+' Code Date: 2026/8/13
+'
+Function DoFinancialDataQuartile( _
+    ByVal pliRange As Range) As Quartile_Data_Type
+    Dim q As Quartile_Data_Type
 
+    With q
+        .minQuartile = WorksheetFunction.Quartile(pliRange, 0)
+        .lowerQuartile = WorksheetFunction.Quartile(pliRange, 1)
+        .medianQuartiile = WorksheetFunction.Quartile(pliRange, 2)
+        .upperQuartile = WorksheetFunction.Quartile(pliRange, 3)
+        .maxQuartile = WorksheetFunction.Quartile(pliRange, 4)
+    End With
+    DoFinancialDataQuartile = q
+End Function
 '
 ' Description: do Screening_Worksheet screening statistics and return an enumeration
 '              of Screening_Statistics
@@ -359,7 +376,7 @@ Public Function FindNumberOfCompanies() As Integer
     Set tgtWs = Worksheets(Osiris_Review_Constant.MASTER_SHEET)
     Set selectedRange = tgtWs.Range(Osiris_Review_Constant.SCREENING_WORKSHEET_BASE_RANGE)
     nc = Osiris_Review_Gadgets.FindMaximumRow(selectedRange) - 2
-    
+    Debug.Print "===> Number of potential comparables: " & CStr(nc)
     FindNumberOfCompanies = nc
     
 End Function

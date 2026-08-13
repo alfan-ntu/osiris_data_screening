@@ -1,10 +1,10 @@
 VERSION 5.00
 Begin {C62A69F0-16DC-11CE-9E98-00AA00574A4F} Screening_Worksheet_Last_Year 
    Caption         =   "去年度可比較公司篩選表"
-   ClientHeight    =   2892
-   ClientLeft      =   108
-   ClientTop       =   456
-   ClientWidth     =   9636.001
+   ClientHeight    =   2895
+   ClientLeft      =   105
+   ClientTop       =   450
+   ClientWidth     =   9645.001
    OleObjectBlob   =   "Screening_Worksheet_Last_Year.frx":0000
    StartUpPosition =   1  'CenterOwner
 End

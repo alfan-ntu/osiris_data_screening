@@ -1,10 +1,10 @@
 VERSION 5.00
 Begin {C62A69F0-16DC-11CE-9E98-00AA00574A4F} PLIDetailsForm 
    Caption         =   "Osiris 可比較公司篩選工具 (雅博會計師事務所)"
-   ClientHeight    =   10524
-   ClientLeft      =   108
-   ClientTop       =   456
-   ClientWidth     =   12804
+   ClientHeight    =   10530
+   ClientLeft      =   105
+   ClientTop       =   450
+   ClientWidth     =   12810
    OleObjectBlob   =   "PLIDetailsForm.frx":0000
    StartUpPosition =   1  'CenterOwner
 End
@@ -16,10 +16,11 @@ Attribute VB_Exposed = False
 '
 '   Description: A UserForm supporting Osiris result screening; Primary progam dealing with Osiris data screening
 '
-'   Date: 2024/9/5
+'   Date: 2026/8/13
 '   Author: maoyi.fan@yapro.com.tw
-'   Ver.: 0.1k
+'   Ver.: 0.1m
 '   Revision History:
+'       - 2026/8/13, 0.1m: Supported generation of '可比較公司財務資料' worksheet
 '       - 2024/9/5,  0.1k: Added column header of extra columns in worksheets "Screening_Worksheet", "PLI_Screening"
 '       - 2024/8/10, 0.1j: Navigation among different companies according to the selected comparable status
 '       - 2024/6/15, 0.1h: Adjusted constant arrangement to accommodate dual operation conditions
@@ -174,7 +175,7 @@ Sub presetScreeningWorksheet(ByVal pathToWorkbookLastYear As String, ByVal compa
         Set screeningSheetLastYear = workbookLastYear.Sheets(Osiris_Review_Constant.SCREENING_SHEET).Range( _
             Osiris_Review_Constant.CONST_COMPANY_NAME_COLUMN & CStr(Osiris_Review_Constant.CONST_SCREENING_FIRST_DATA_ROW))
         tmpInt = Osiris_Review_Gadgets.FindMaximumRow(screeningSheetLastYear)
-        tmpStr = ",'" & worksheetLastYear & "'!$B$3:$N$" & CStr(tmpInt) & ","
+        tmpStr = ",'" & worksheetLastYear & "'!$B$3:$Z$" & CStr(tmpInt) & ","
         ' Debug.Print "rangeLastYear: " & tmpStr & " of " & CStr(tmpInt) & " potential comparable companies"
         ' resume back to the workbook of current year
         workbookLastYear.Close
@@ -188,7 +189,6 @@ Sub presetScreeningWorksheet(ByVal pathToWorkbookLastYear As String, ByVal compa
                     ",VLOOKUP(B" & CStr(r) & tmpStr & CStr(tmpInt) & ", FALSE))"
             targetRange.Formula = vlookupString
 '            Debug.Print "Comparable vlookup: " & vlookupString
-            
             ' populate review comment of last year
             Set targetRange = tgtWs.Cells(r, Osiris_Review_Constant.CONST_COMMENT_COLUMN).Offset(0, 2)
             tmpInt = Asc(reviewCommentColLastYear) - Asc(companyColLastYear) + 1
@@ -232,8 +232,7 @@ Sub ensureScreeningWorksheetExists()
         Sheets(worksheetIndex + 1).Name = Osiris_Review_Constant.SCREENING_SHEET
         Debug.Print "Screening worksheet, " & Osiris_Review_Constant.SCREENING_SHEET & " created!"
         '
-        ' Prompt user to select screening workbook of last year
-        ' (Under constructuion!)
+        ' Prompt user to select screening workbook of last year @ 2025/5/2
         '
         Screening_Worksheet_Last_Year.Show vbModal
         pathToWorkbookLastYear = Screening_Worksheet_Last_Year.pathToWorkbookLastYear
@@ -518,7 +517,6 @@ Sub comparableReviewByRow(ByVal PLI_Switch As String, ByVal currentRow As Long)
     Me.tbConditionCount.Value = screenStat.conditionCount
     Me.tbRejectCount.Value = screenStat.rejectCount
     Me.tbUnscreenCount.Value = screenStat.unscreenedCount
- 
 End Sub
 
 '
@@ -618,7 +616,7 @@ Private Sub updateWorksheets()
         .upperQuartile = CDbl(Me.tbMedian.Value)
         .maxQuartile = CDbl(Me.tbMax.Value)
     End With
-    
+
     ' update Screening_Worksheet
     ActiveSheet.Cells(currentRow, Osiris_Review_Constant.SCREENING_WORKSHEET_STATUS_COLUMN).Value = comparableCategory
     ActiveSheet.Cells(currentRow, Osiris_Review_Constant.SCREENING_WORKSHEET_REVIEW_COLUMN).Value = rejectConditionReason
@@ -691,6 +689,7 @@ End Sub
 
 '
 ' Description: Move to the next record for new review. Extended 'Next' to various criteria
+' ToDo's: Add a new functionality to create 可比較公司財務資料 and 可比較公司篩選過程 worksheets
 ' Code Date: 2024/8/10
 '
 Private Sub cbNext_Click()
@@ -698,26 +697,386 @@ Private Sub cbNext_Click()
     Dim activeCellRow, activeCellColumn     As Long
     Dim PLISwitch                           As String
     Dim nextRow                             As Long
+    Dim answer                              As VbMsgBoxResult
+    Dim originalSheet                       As Worksheet
     
     minRow = Osiris_Review_Gadgets.FindMinimumRow(ActiveSheet.Range(Osiris_Review_Constant.SCREENING_WORKSHEET_BASE_RANGE))
     maxRow = Osiris_Review_Gadgets.FindMaximumRow(ActiveSheet.Range(Osiris_Review_Constant.SCREENING_WORKSHEET_BASE_RANGE))
     currRow = ActiveCell.Row
-    
     nextRow = find_next_row(ActiveCell, cboxJump.Text, minRow, maxRow)
     Debug.Print "<Debug> Next row goes to : " & nextRow
-
+    PLISwitch = Osiris_Review_Gadgets.PLILabelToSwitch(Me.lblPLI.Caption)
+    Debug.Print "New Current row: " & nextRow & " PLI Switch: " & PLISwitch
     If nextRow > maxRow Then
-        MsgBox "已到達最後一筆可比較公司資料", vbExclamation
+        answer = MsgBox( _
+            "已到達最後一筆可比較公司。" & vbCrLf & _
+            "是否建立「可比較公司財務資料」及「可比較公司篩選過程」工作表？", _
+            vbQuestion + vbYesNo, _
+            "可比較公司篩選完成")
+        If answer = vbYes Then
+            Set originalSheet = ActiveSheet
+            CreateResultWorksheets (PLISwitch)
+            originalSheet.Activate
+        End If
     Else
         With ActiveCell
             .Offset(nextRow - currRow, 0).Select
         End With
-        PLISwitch = Osiris_Review_Gadgets.PLILabelToSwitch(Me.lblPLI.Caption)
-        Debug.Print "New Current row: " & nextRow & " PLI Switch: " & PLISwitch
         Call comparableReviewByRow(PLISwitch, nextRow)
     End If
 End Sub
+'
+' Description: Create two results worksheets, 可比較公司財務資料 and 可比較公司篩選過程, after the review of
+'              potential comparables is done
+' Code Date: 2026/8/11
+' Status: In-progress; co-working with ChatGPT
+'
+Private Sub CreateResultWorksheets(ByVal PLI_Switch As String)
+    Dim targetWb As Workbook
+    Dim anchorWs As Worksheet
+    Dim ws As Worksheet
+    Dim answer As VbMsgBoxResult
+    Dim financialExists As Boolean
+    Dim screeningExists As Boolean
 
+    Set targetWb = ActiveWorkbook
+    ' Determine the worksheet after which the result worksheets will be added
+    Select Case PLI_Switch
+        Case Osiris_Review_Constant.CONST_OM_PLI
+            Set anchorWs = targetWb.Worksheets( _
+                Osiris_Review_Constant.OM_COMPARABLE_SHEET)
+        Case Osiris_Review_Constant.CONST_NCP_PLI
+            Set anchorWs = targetWb.Worksheets( _
+                Osiris_Review_Constant.NCP_COMPARABLE_SHEET)
+        Case Else
+            MsgBox "無法判斷 PLI 類型，無法建立結果工作表。", _
+                   vbExclamation, _
+                   "錯誤"
+            Exit Sub
+    End Select
+    ' Check whether the result worksheets already exist
+    financialExists = Common_Utilities.worksheetExists( _
+                        Osiris_Review_Constant.FINANCIAL_DATA_SHEET)
+    screeningExists = Common_Utilities.worksheetExists( _
+                        Osiris_Review_Constant.SCREENING_PROCESS_SHEET)
+
+    ' If either worksheet already exists, ask whether to replace them
+    If financialExists Or screeningExists Then
+        answer = MsgBox( _
+            "「可比較公司財務資料」或「可比較公司篩選過程」工作表已存在。" & _
+            vbCrLf & vbCrLf & _
+            "是否刪除既有工作表並重新建立？", _
+            vbQuestion + vbYesNo, _
+            "工作表已存在")
+        If answer = vbNo Then
+            Exit Sub
+        End If
+        ' Delete existing result worksheets
+        Application.DisplayAlerts = False
+        If financialExists Then
+            targetWb.Worksheets( _
+                Osiris_Review_Constant.FINANCIAL_DATA_SHEET).Delete
+        End If
+        If screeningExists Then
+            targetWb.Worksheets( _
+                Osiris_Review_Constant.SCREENING_PROCESS_SHEET).Delete
+        End If
+        Application.DisplayAlerts = True
+    End If
+    ' Create "可比較公司財務資料" immediately after the anchor sheet
+    Set ws = targetWb.Worksheets.Add(After:=anchorWs)
+    ws.Name = Osiris_Review_Constant.FINANCIAL_DATA_SHEET
+    ' populate contents to Osiris_Review_Constant.FINANCIAL_DATA_SHEET
+    Call populateComparableFinancialData(anchorWs, ws)
+    
+    ' Create "可比較公司篩選過程" immediately after the financial data sheet
+    Set ws = targetWb.Worksheets.Add(After:=ws)
+    ws.Name = Osiris_Review_Constant.SCREENING_PROCESS_SHEET
+End Sub
+'
+' Description: Fill financial data contents to '可比較公司財務資料' worksheet
+' Code Date: 2026/8/12
+' Note: co-worked with ChatGPT
+'
+Private Sub populateComparableFinancialData( _
+    ByVal anchorWs As Worksheet, _
+    ByVal targetWs As Worksheet)
+    Dim lastRow             As Long
+    Dim lastCol             As Long
+    Dim dataRange           As Range
+    Dim deleteRange         As Range
+    Dim idxRange, cell      As Range
+    Dim sortKey             As Range
+    Dim lyCol               As Long
+    Dim llyCol              As Long
+    Dim companyProperCol    As Long
+    Dim removedColumns      As Long
+    '----------------------------------------------------------
+    ' 1. Copy the content of the anchor worksheet
+    '----------------------------------------------------------
+    anchorWs.Cells.Copy Destination:=targetWs.Cells
+    '----------------------------------------------------------
+    ' 2. Copy PLI Ave-CY-LY-LLY header information
+    '    from row 4 to row 14
+    '----------------------------------------------------------
+    targetWs.Range( _
+        Osiris_Review_Constant.CONST_PLI_AVERAGE_COLUMN & "4:" & _
+        Osiris_Review_Constant.CONST_PLI_LLY_COLUMN & "4" _
+    ).Copy Destination:= _
+        targetWs.Range( _
+            Osiris_Review_Constant.CONST_PLI_AVERAGE_COLUMN & "14")
+    '----------------------------------------------------------
+    ' 3. Remove rows 4 ~ 13 where quartile information of all
+    '    companies lists
+    '----------------------------------------------------------
+    targetWs.Rows("4:13").Delete
+    '----------------------------------------------------------
+    ' 4. Remove the Rejection Reason column
+    '    IMPORTANT:
+    '    Do this BEFORE inserting the four new PLI columns.
+    '----------------------------------------------------------
+    targetWs.Columns( _
+        Osiris_Review_Constant.CONST_PLI_REJECTION_REASON_COLUMN).Delete
+    '----------------------------------------------------------
+    ' 5. Add four PLI percentage columns after Company Name
+    '----------------------------------------------------------
+    Call AddPLIResultColumns(targetWs)
+    '----------------------------------------------------------
+    ' 6. Determine the data range
+    '----------------------------------------------------------
+    lastRow = targetWs.Cells( _
+                    targetWs.Rows.Count, 1).End(xlUp).Row
+    lastCol = targetWs.Cells( _
+                    4, targetWs.Columns.Count).End(xlToLeft).Column
+    Set dataRange = targetWs.Range( _
+                        targetWs.Cells(4, 1), _
+                        targetWs.Cells(lastRow, lastCol))
+    '----------------------------------------------------------
+    ' 7. Filter PLI Comparable column
+    '    Keep only records with "OK"
+    '----------------------------------------------------------
+    dataRange.AutoFilter _
+        Field:=targetWs.Range( _
+            Osiris_Review_Constant.CONST_PLI_COMPARABLE_COLUMN & "4").Column _
+            - dataRange.Column + 1, _
+        Criteria1:="<>OK"
+    '----------------------------------------------------------
+    ' 8. Get visible non-OK data rows
+    '----------------------------------------------------------
+    On Error Resume Next
+    Set deleteRange = dataRange.Offset(1, 0) _
+                              .Resize(dataRange.Rows.Count - 1) _
+                              .SpecialCells(xlCellTypeVisible)
+    On Error GoTo 0
+    '----------------------------------------------------------
+    ' 9. Delete all non-OK records and remove AutoFilter
+    '----------------------------------------------------------
+    If Not deleteRange Is Nothing Then
+        deleteRange.EntireRow.Delete
+    End If
+    If targetWs.AutoFilterMode Then
+        targetWs.AutoFilterMode = False
+    End If
+    '----------------------------------------------------------
+    ' 10. Recalculate the remaining data range
+    '----------------------------------------------------------
+    lastRow = targetWs.Cells( _
+                    targetWs.Rows.Count, 1).End(xlUp).Row
+    lastCol = targetWs.Cells( _
+                    4, targetWs.Columns.Count).End(xlToLeft).Column
+    Set dataRange = targetWs.Range( _
+                        targetWs.Cells(4, 1), _
+                        targetWs.Cells(lastRow, lastCol))
+    '----------------------------------------------------------
+    ' 11. Remove columns between LY and LLY.
+    '     WATCH: These redundant columns might be different from
+    '            report to report
+    '----------------------------------------------------------
+    lyCol = targetWs.Range( _
+                Osiris_Review_Constant.CONST_PLI_LY_COLUMN & "1").Column
+    llyCol = targetWs.Range( _
+                 Osiris_Review_Constant.CONST_PLI_LLY_COLUMN & "1").Column
+    companyProperCol = targetWs.Range( _
+                        Osiris_Review_Constant.CONST_PLI_COMPANY_PROPER_COLUMN & _
+                        "1").Column
+    removedColumns = llyCol - lyCol - 1
+    If removedColumns > 0 Then
+        targetWs.Range( _
+            targetWs.Columns(lyCol + 1), _
+            targetWs.Columns(llyCol - 1) _
+        ).Delete
+    End If
+    '----------------------------------------------------------
+    ' 12. Sort by Company Proper Name
+    '----------------------------------------------------------
+    companyProperCol = companyProperCol - removedColumns
+    Set sortKey = targetWs.Range( _
+                    targetWs.Cells(4, companyProperCol), _
+                    targetWs.Cells(lastRow, companyProperCol))
+    With targetWs.Sort
+        .SortFields.Clear
+        .SortFields.Add _
+            Key:=sortKey, _
+            SortOn:=xlSortOnValues, _
+            Order:=xlAscending, _
+            DataOption:=xlSortNormal
+        .SetRange dataRange
+        .Header = xlYes
+        .MatchCase = False
+        .Orientation = xlTopToBottom
+        .SortMethod = xlPinYin
+        .Apply
+    End With
+    ' re-index the table
+    Set idxRange = targetWs.Range( _
+                    targetWs.Cells(5, 1), _
+                    targetWs.Cells(lastRow, 1))
+    idxRange.NumberFormat = "@"
+    For Each cell In idxRange
+        cell.Value = CStr((cell.Row - 4)) & "."
+        cell.HorizontalAlignment = xlCenter
+    Next cell
+    '----------------------------------------------------------
+    ' 13. Build quartile table
+    '----------------------------------------------------------
+    Call PopulateComparableQuartile( _
+        targetWs, _
+        companyProperCol, _
+        5, _
+        lastRow)
+End Sub
+'
+' Description: Remove redundant columns
+' Code Date: 2026/8/12
+'
+Private Sub RemoveColumnsBetweenLYAndLLY(ByVal ws As Worksheet)
+    Dim lyCol As Long
+    Dim llyCol As Long
+
+    lyCol = ws.Range( _
+                Osiris_Review_Constant.CONST_PLI_LY_COLUMN & "1").Column
+    llyCol = ws.Range( _
+                Osiris_Review_Constant.CONST_PLI_LLY_COLUMN & "1").Column
+    If llyCol > lyCol + 1 Then
+        ws.Range( _
+            ws.Columns(lyCol + 1), _
+            ws.Columns(llyCol - 1) _
+        ).Delete
+    End If
+End Sub
+'
+' Description: Add PLI columns in precentaged format to do quartile calculation
+' Code Date: 2026/8/12
+' Note: Co-worked with ChatGPT
+'
+Private Sub AddPLIResultColumns(ByVal ws As Worksheet)
+    Dim companyCol As Long
+    Dim lastRow As Long
+    Dim sourceColumns As Variant
+    Dim i As Long
+    Dim sourceCol As Long
+    Dim targetCol As Long
+    Dim r As Long
+    Dim sourceValue As Variant
+
+    companyCol = ws.Range( _
+                    Osiris_Review_Constant.CONST_PLI_COMPANY_PROPER_COLUMN & _
+                    "1").Column
+    lastRow = ws.Cells(ws.Rows.Count, 1).End(xlUp).Row
+    ' Columns from which the four new percentage columns are derived
+    sourceColumns = Array( _
+        Osiris_Review_Constant.CONST_PLI_CY_COLUMN, _
+        Osiris_Review_Constant.CONST_PLI_LY_COLUMN, _
+        Osiris_Review_Constant.CONST_PLI_LLY_COLUMN, _
+        Osiris_Review_Constant.CONST_PLI_AVERAGE_COLUMN _
+    )
+    ' Insert four columns immediately after Company Name
+    ws.Columns(companyCol + 1).Resize(, 4).Insert Shift:=xlToRight
+    ' Populate the four new columns
+    For i = LBound(sourceColumns) To UBound(sourceColumns)
+        sourceCol = ws.Range(sourceColumns(i) & "1").Column
+        targetCol = companyCol + 1 + i
+        ' Copy the header
+        ws.Cells(4, targetCol).Value = ws.Cells(4, sourceCol).Value
+        ' Copy values / 100
+        For r = 5 To lastRow
+            sourceValue = ws.Cells(r, sourceCol).Value
+            If IsError(sourceValue) Then
+                ws.Cells(r, targetCol).Value = sourceValue
+            ElseIf IsNumeric(sourceValue) Then
+                ws.Cells(r, targetCol).Value = CDbl(sourceValue) / 100
+            Else
+                ws.Cells(r, targetCol).Value = sourceValue
+            End If
+        Next r
+        ' Percentage format
+        ws.Range( _
+            ws.Cells(5, targetCol), _
+            ws.Cells(lastRow, targetCol) _
+        ).NumberFormat = "0.00%"
+    Next i
+End Sub
+'
+' Description: Calculate quartile per year
+' Code Date: 2026/8/12
+' Note: Co-worked with ChatGPT
+'
+Private Sub PopulateComparableQuartile( _
+    ByVal targetWs As Worksheet, _
+    ByVal companyProperCol As Long, _
+    ByVal firstDataRow As Long, _
+    ByVal lastDataRow As Long)
+
+    Dim i As Long
+    Dim resultRow As Long
+    Dim pliRange As Range
+    Dim q As Quartile_Data_Type
+    '----------------------------------------------------------
+    ' Quartile result starts two rows below the last company
+    '----------------------------------------------------------
+    resultRow = lastDataRow + 2
+    '----------------------------------------------------------
+    ' Title / first column
+    '----------------------------------------------------------
+    targetWs.Cells(resultRow, companyProperCol).Value = "PLI Quartile"
+    '----------------------------------------------------------
+    ' Four PLI columns are immediately after Company Name
+    '----------------------------------------------------------
+    For i = 1 To 4
+        Set pliRange = targetWs.Range( _
+            targetWs.Cells(firstDataRow, companyProperCol + i), _
+            targetWs.Cells(lastDataRow, companyProperCol + i))
+        q = Osiris_Review_Gadgets.DoFinancialDataQuartile(pliRange)
+        ' Header
+        targetWs.Cells(resultRow, companyProperCol + i).Value = _
+            targetWs.Cells(4, companyProperCol + i).Value
+        targetWs.Cells(resultRow, companyProperCol + i).HorizontalAlignment = xlCenter
+        ' Quartile results
+        targetWs.Cells(resultRow + 1, companyProperCol + i).Value = _
+            q.minQuartile
+        targetWs.Cells(resultRow + 2, companyProperCol + i).Value = _
+            q.lowerQuartile
+        targetWs.Cells(resultRow + 3, companyProperCol + i).Value = _
+            q.medianQuartiile
+        targetWs.Cells(resultRow + 4, companyProperCol + i).Value = _
+            q.upperQuartile
+        targetWs.Cells(resultRow + 5, companyProperCol + i).Value = _
+            q.maxQuartile
+        ' Percentage format
+        targetWs.Range( _
+            targetWs.Cells(resultRow + 1, companyProperCol + i), _
+            targetWs.Cells(resultRow + 5, companyProperCol + i) _
+        ).NumberFormat = "0.00%"
+    Next i
+    '----------------------------------------------------------
+    ' Quartile labels
+    '----------------------------------------------------------
+    targetWs.Cells(resultRow + 1, companyProperCol).Value = "Minimum"
+    targetWs.Cells(resultRow + 2, companyProperCol).Value = "Lower Quartile"
+    targetWs.Cells(resultRow + 3, companyProperCol).Value = "Median"
+    targetWs.Cells(resultRow + 4, companyProperCol).Value = "Upper Quartile"
+    targetWs.Cells(resultRow + 5, companyProperCol).Value = "Maximum"
+End Sub
 '
 ' Description: Locate next row according to jump condition selected
 ' Code Date: 2024/8/9
@@ -746,6 +1105,39 @@ Private Function find_next_row(currRange As Range, jump_criteria As String, minR
 ReturnLine:
     find_next_row = nextRow
 End Function
+'
+' Description: Automatically update tbComment for specific Reject Resaons,
+'   - RR_BIG_RD_EXPENSE => 'Huge R&D expenses'
+'   - RR_BIG_MARKETING_EXPENSE => 'Huge advertising expenses'
+'   - RR_MISSING_DATA   => 'Missing financial data'
+'   - RR_THREE_YEAR_LOSS => '3-consecutive-years loss'
+' Date: 2026/7/6
+'
+Private Sub cboxRejectionReason_Change()
+    Dim appendText As String
+    Select Case Me.cboxRejectionReason.Value
+        Case Osiris_Review_Constant.RR_BIG_RD_EXPENSE
+            appendText = "Huge R&D expenses"
+
+        Case Osiris_Review_Constant.RR_BIG_MARKETING_EXPENSE
+            appendText = "Huge advertising expenses"
+
+        Case Osiris_Review_Constant.RR_MISSING_DATA
+            appendText = "Missing financial data"
+
+        Case Osiris_Review_Constant.RR_THREE_YEAR_LOSS
+            appendText = "3-consecutive-year loss"
+
+        Case Else
+            Exit Sub
+    End Select
+    ' Append the text
+    If Len(Trim(Me.tbComment.Text)) > 0 Then
+        Me.tbComment.Text = Me.tbComment.Text & vbCrLf & appendText
+    Else
+        Me.tbComment.Text = appendText
+    End If
+End Sub
 
 '
 ' Description: Move to the previous record for new review

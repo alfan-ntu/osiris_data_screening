@@ -218,20 +218,24 @@ Sub SetColumnWidth(colIndex As String, w As Integer)
 End Sub
 
 '
-' Description: check if a specified worksheet exists or not
+' Description: check if a specified worksheet in the ActiveWorkbook exists or not
 '
 Function worksheetExists(sheetName As String) As Boolean
+'    Dim ws As Worksheet
+'
+'    worksheetExists = False
+'    ' For Each ws In ThisWorkbook.Worksheets
+'    For Each ws In ActiveWorkbook.Worksheets
+'        If ws.Name = sheetName Then
+'            worksheetExists = True
+'            Exit Function
+'        End If
+'    Next ws
     Dim ws As Worksheet
-    
-    worksheetExists = False
-    
-    ' For Each ws In ThisWorkbook.Worksheets
-    For Each ws In ActiveWorkbook.Worksheets
-        If ws.Name = sheetName Then
-            worksheetExists = True
-            Exit Function
-        End If
-    Next ws
+    On Error Resume Next
+    Set ws = ActiveWorkbook.Worksheets(sheetName)
+    On Error GoTo 0
+    worksheetExists = Not ws Is Nothing
 End Function
 
 '
