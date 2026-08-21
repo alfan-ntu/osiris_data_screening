@@ -34,6 +34,11 @@ Public Const CONST_NCP_PLI_LABEL                As String = "¦¨¥»¤ÎÀç·~¶O¥Î²b§Q²
 ' SCREENINT_SHEET is actually a worksheet replicating
 Public Const SCREENING_SHEET                    As String = "Screening_Worksheet"
 '
+' Two result worksheets when the potential comparables review is done
+'
+Public Const FINANCIAL_DATA_SHEET               As String = "¥i¤ñ¸û¤½¥q°]°È¸ê®Æ"
+Public Const SCREENING_PROCESS_SHEET            As String = "¥i¤ñ¸û¤½¥q¿z¿ï¹Lµ{"
+'
 ' Layout constants associated with ¦Cªí (2) or Screening_Worksheet
 '
 Public Const MASTER_SHEET                       As String = "¦Cªí (2)"

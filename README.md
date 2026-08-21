@@ -2,8 +2,8 @@
 ## General Description: 
 This is an Excel utility program developed in VBA supporting Osiris data screening, real time PLI calculation and other common functionalities.
 
-Ver. 0.1h
-Date: 2024/9/5  
+Ver. 0.1n
+Date: 2026/8/21  
 Author: maoyi.fan@yapro.com.tw
 
 ## Installations
@@ -31,6 +31,7 @@ As of the time this document is edited, this program includes the following VBA 
 3. ver. 0.1j Navigation among different companies according to the selected comparable status
 4. ver. 0.1l Check comparable states and comments of last year
 5. ver. 0.1m Supporting generation of '可比較公司財務資料' worksheet after the comparables review finishes.
+6. ver. 0.1n Supporting generation of '可比較公司篩選過程' worksheet after the comparables review finishes.
 
 ## ToDo's
 1. Check potential comparables of the year against comparables status of the last or previous years(Done in v. 0.1l)

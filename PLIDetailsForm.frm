@@ -16,10 +16,11 @@ Attribute VB_Exposed = False
 '
 '   Description: A UserForm supporting Osiris result screening; Primary progam dealing with Osiris data screening
 '
-'   Date: 2026/8/13
+'   Date: 2026/8/21
 '   Author: maoyi.fan@yapro.com.tw
-'   Ver.: 0.1m
+'   Ver.: 0.1n
 '   Revision History:
+'       - 2026/8/21, 0.1n: Supported generation of '可比較公司篩選過程' worksheet
 '       - 2026/8/13, 0.1m: Supported generation of '可比較公司財務資料' worksheet
 '       - 2024/9/5,  0.1k: Added column header of extra columns in worksheets "Screening_Worksheet", "PLI_Screening"
 '       - 2024/8/10, 0.1j: Navigation among different companies according to the selected comparable status
@@ -85,13 +86,13 @@ Sub comparableReview(PLI_Switch As String)
             Cells(unscreenedRow, 1).Select
         End If
     End If
-    currentRow = ActiveCell.Row
+    currentRow = ActiveCell.row
     Call ensurePLIWorksheetExists(PLI_Switch)
     '
     ' Get the company name of the current row and pass it to comparableReviewByRow
     '
     Call populateComboBoxList
-    currentRow = ActiveCell.Row
+    currentRow = ActiveCell.row
     Call comparableReviewByRow(PLI_Switch, currentRow)
     ' Experimental modification, added vbModeless so that Showing UserForm and operating worksheet contents
     ' can be done at the same time
@@ -538,7 +539,7 @@ Private Sub cbConfirm_Click()
     Dim activeCellRow, activeCellColumn As Long
     
     updateScreeningWorksheet = False
-    activeCellRow = ActiveCell.Row
+    activeCellRow = ActiveCell.row
     
     companyUnderReview = Me.tbCompanyName.Value
     comparableCategory = Me.cboxComparableState.Value
@@ -608,7 +609,7 @@ Private Sub updateWorksheets()
     rejectConditionReason = Me.cboxRejectionReason.Value
     comparableBusinessDescription = Me.tbBusinessDescription.Value
     reviewComment = Me.tbComment.Value
-    currentRow = ActiveCell.Row
+    currentRow = ActiveCell.row
     With q
         .minQuartile = CDbl(Me.tbMin.Value)
         .lowerQuartile = CDbl(Me.tbLowerQuartile.Value)
@@ -665,7 +666,7 @@ Function getQuartileUpdate(ByVal comparableSheet As String) As Quartile_Data_Typ
     ' ToDo's: allocate this tempRange according to actual situation
     '
     lRow = Osiris_Review_Gadgets.FindMaximumRow(selectedRange)
-    fRow = selectedRange.Row
+    fRow = selectedRange.row
     PLIRangeString = Osiris_Review_Constant.PLI_SHEET_AVERAGE_COLUMN & CStr(fRow) & ":" & _
                      Osiris_Review_Constant.PLI_SHEET_COMPARABLE_COLUMN & CStr(lRow)
     ' Debug.Print "<getQuartileUpdate>PLIRangeString: " & PLIRangeString
@@ -702,7 +703,7 @@ Private Sub cbNext_Click()
     
     minRow = Osiris_Review_Gadgets.FindMinimumRow(ActiveSheet.Range(Osiris_Review_Constant.SCREENING_WORKSHEET_BASE_RANGE))
     maxRow = Osiris_Review_Gadgets.FindMaximumRow(ActiveSheet.Range(Osiris_Review_Constant.SCREENING_WORKSHEET_BASE_RANGE))
-    currRow = ActiveCell.Row
+    currRow = ActiveCell.row
     nextRow = find_next_row(ActiveCell, cboxJump.Text, minRow, maxRow)
     Debug.Print "<Debug> Next row goes to : " & nextRow
     PLISwitch = Osiris_Review_Gadgets.PLILabelToSwitch(Me.lblPLI.Caption)
@@ -729,7 +730,7 @@ End Sub
 ' Description: Create two results worksheets, 可比較公司財務資料 and 可比較公司篩選過程, after the review of
 '              potential comparables is done
 ' Code Date: 2026/8/11
-' Status: In-progress; co-working with ChatGPT
+' Status: worked with ChatGPT
 '
 Private Sub CreateResultWorksheets(ByVal PLI_Switch As String)
     Dim targetWb As Workbook
@@ -740,6 +741,9 @@ Private Sub CreateResultWorksheets(ByVal PLI_Switch As String)
     Dim screeningExists As Boolean
 
     Set targetWb = ActiveWorkbook
+    
+    Debug.Print ActiveSheet.Name
+    
     ' Determine the worksheet after which the result worksheets will be added
     Select Case PLI_Switch
         Case Osiris_Review_Constant.CONST_OM_PLI
@@ -792,7 +796,239 @@ Private Sub CreateResultWorksheets(ByVal PLI_Switch As String)
     ' Create "可比較公司篩選過程" immediately after the financial data sheet
     Set ws = targetWb.Worksheets.Add(After:=ws)
     ws.Name = Osiris_Review_Constant.SCREENING_PROCESS_SHEET
+    ' populate contents to Osiris_Review_Constant.SCREENING_PROCESS_SHEET
+    Call populateScreeningProcess(targetWb.Worksheets(Osiris_Review_Constant.SCREENING_SHEET), ws)
 End Sub
+'
+' Description: Fill screening process contents to '可比較公司篩選過程'
+' Parameters:
+'       sourceWs: Osiris_Review_Constant.SCREENING_SHEET, i.e. Screening_Worksheet
+'       targetWs: The newly created SCREENING_PROCESS_SHEET, i.e. 可比較公司篩選過程'
+' Code Date: 2026/8/20
+' Status: In-progress; co-working with ChatGPT
+'
+Private Sub populateScreeningProcess( _
+    ByVal sourceWs As Worksheet, _
+    ByVal targetWs As Worksheet)
+
+    Dim lastRow, lastCol                        As Long
+    Dim dataRange, deleteRange, companyRange    As Range
+    Dim sortKey, cell                           As Range
+    Dim companyCol, manualReviewCol             As Long
+    Dim statusCol, removedColumns               As Long
+
+    '----------------------------------------------------------
+    ' 1. Copy Screening_Worksheet to the target worksheet
+    '----------------------------------------------------------
+    sourceWs.Cells.Copy Destination:=targetWs.Cells
+    '----------------------------------------------------------
+    ' 2. Determine the current table boundaries
+    '----------------------------------------------------------
+    lastRow = targetWs.Cells( _
+                    targetWs.Rows.Count, 1).End(xlUp).row
+    lastCol = targetWs.Cells( _
+                    2, targetWs.Columns.Count).End(xlToLeft).Column
+    Set dataRange = targetWs.Range( _
+                        targetWs.Cells(2, 1), _
+                        targetWs.Cells(lastRow, lastCol))
+    statusCol = targetWs.Range( _
+                    Osiris_Review_Constant.CONST_STATUS_COLUMN & "1").Column
+    '----------------------------------------------------------
+    ' 3. Filter Status = "OK"
+    '    We display OK rows temporarily, then delete them.
+    '----------------------------------------------------------
+    dataRange.AutoFilter _
+        Field:=statusCol - dataRange.Column + 1, _
+        Criteria1:="OK"
+    On Error Resume Next
+    Set deleteRange = dataRange.Offset(1, 0) _
+                              .Resize(dataRange.Rows.Count - 1) _
+                              .SpecialCells(xlCellTypeVisible)
+    On Error GoTo 0
+    '----------------------------------------------------------
+    ' 4. Delete all Status = "OK" rows
+    '----------------------------------------------------------
+    If Not deleteRange Is Nothing Then
+        deleteRange.EntireRow.Delete
+    End If
+    ' Remove AutoFilter immediately after it has served its purpose
+    If targetWs.AutoFilterMode Then
+        targetWs.AutoFilterMode = False
+    End If
+    '----------------------------------------------------------
+    ' 5. Recalculate the remaining table boundaries
+    '----------------------------------------------------------
+    lastRow = targetWs.Cells( _
+                    targetWs.Rows.Count, 1).End(xlUp).row
+    lastCol = targetWs.Cells( _
+                    2, targetWs.Columns.Count).End(xlToLeft).Column
+    '----------------------------------------------------------
+    ' 6. Convert Company Name to Proper Case
+    '----------------------------------------------------------
+    companyCol = targetWs.Range( _
+                    Osiris_Review_Constant.CONST_COMPANY_NAME_COLUMN & _
+                    "1").Column
+    Set companyRange = targetWs.Range( _
+                            targetWs.Cells(3, companyCol), _
+                            targetWs.Cells(lastRow, companyCol))
+    For Each cell In companyRange
+        If Not IsError(cell.Value) Then
+            If Len(Trim$(CStr(cell.Value))) > 0 Then
+                cell.Value = StrConv( _
+                                CStr(cell.Value), _
+                                vbProperCase)
+            End If
+        End If
+    Next cell
+    '----------------------------------------------------------
+    ' 7. Sort remaining NG records by Company Name
+    '----------------------------------------------------------
+    Set dataRange = targetWs.Range( _
+                        targetWs.Cells(2, 1), _
+                        targetWs.Cells(lastRow, lastCol))
+    Set sortKey = targetWs.Range( _
+                    targetWs.Cells(3, companyCol), _
+                    targetWs.Cells(lastRow, companyCol))
+    With targetWs.Sort
+        .SortFields.Clear
+        .SortFields.Add _
+            key:=sortKey, _
+            SortOn:=xlSortOnValues, _
+            Order:=xlAscending, _
+            DataOption:=xlSortNormal
+        .SetRange dataRange
+        .Header = xlYes
+        .MatchCase = False
+        .Orientation = xlTopToBottom
+        .SortMethod = xlPinYin
+        .Apply
+    End With
+    '----------------------------------------------------------
+    ' 8. Remove columns between Company Name and Manual Review
+    '----------------------------------------------------------
+    companyCol = targetWs.Range( _
+                    Osiris_Review_Constant.CONST_COMPANY_NAME_COLUMN & _
+                    "1").Column
+    manualReviewCol = targetWs.Range( _
+                        Osiris_Review_Constant.CONST_MANUAL_REVIEW_COLUMN & _
+                        "1").Column
+    ' hardcode the column widths, alignment of Company Name and Rejection Reason
+    targetWs.Columns(companyCol).ColumnWidth = 40
+    targetWs.Columns(companyCol).VerticalAlignment = xlCenter
+    targetWs.Columns(manualReviewCol).ColumnWidth = 60
+    targetWs.Columns(manualReviewCol + 1).VerticalAlignment = xlCenter  ' Status column
+    targetWs.Columns(manualReviewCol + 2).ColumnWidth = 60              ' review comment column
+    removedColumns = manualReviewCol - companyCol - 1
+    If removedColumns > 0 Then
+        targetWs.Range( _
+            targetWs.Columns(companyCol + 1), _
+            targetWs.Columns(manualReviewCol - 1) _
+        ).Delete
+    End If
+    targetWs.Rows("1:" & lastRow).AutoFit
+    '----------------------------------------------------------
+    ' 9. Re-index the table
+    '    Row 3 -> "1."
+    '    Row 4 -> "2."
+    '    ...
+    '----------------------------------------------------------
+    Set companyRange = targetWs.Range( _
+                            targetWs.Cells(3, _
+                                targetWs.Range( _
+                                    Osiris_Review_Constant.CONST_IDX_COLUMN & _
+                                    "1").Column), _
+                            targetWs.Cells(lastRow, _
+                                targetWs.Range( _
+                                    Osiris_Review_Constant.CONST_IDX_COLUMN & _
+                                    "1").Column))
+    companyRange.NumberFormat = "@"
+    For Each cell In companyRange
+        cell.Value = CStr(cell.row - 2) & "."
+        cell.HorizontalAlignment = xlCenter
+        cell.VerticalAlignment = xlCenter
+    Next cell
+    
+    Call PopulateManualReviewSummary(targetWs, manualReviewCol - removedColumns, lastRow)
+    
+End Sub
+'
+' Description: Compose rejection reason statistics table
+' Code Date: 2026/8/21
+' Note: in-progress; coworking with ChatGPT
+'
+Private Sub PopulateManualReviewSummary( _
+    ByVal targetWs As Worksheet, _
+    ByVal manualReviewCol As Long, _
+    ByVal lastRow As Long)
+
+    Dim dict                As Object
+    Dim cell                As Range
+    Dim key                 As Variant
+    Dim summaryRow, row     As Long
+    Dim row                 As Long
+
+    Set dict = CreateObject("Scripting.Dictionary")
+    '----------------------------------------------------------
+    ' Collect the different Manual Review categories
+    '----------------------------------------------------------
+    For Each cell In targetWs.Range( _
+                        targetWs.Cells(3, manualReviewCol), _
+                        targetWs.Cells(lastRow, manualReviewCol))
+
+        If Len(Trim$(CStr(cell.Value))) > 0 Then
+            If dict.Exists(CStr(cell.Value)) Then
+                ' increment the counter in case of duplicacy
+                dict(CStr(cell.Value)) = dict(CStr(cell.Value)) + 1
+            Else
+                ' add new element to the dictionay if it is a new one
+                dict.Add CStr(cell.Value), 1
+            End If
+        End If
+    Next cell
+    '----------------------------------------------------------
+    ' Summary table starts two rows after the last data row
+    '----------------------------------------------------------
+    summaryRow = lastRow + 3
+    ' Header of the summary table
+    targetWs.Cells(summaryRow, manualReviewCol).Value = "Manual Review Summary"
+    targetWs.Cells(summaryRow, manualReviewCol).HorizontalAlignment = xlCenter
+    ' Listing categories and counts
+    row = summaryRow + 1
+    For Each key In dict.Keys
+        targetWs.Cells(row, manualReviewCol).Value = key
+        targetWs.Cells(row, manualReviewCol + 1).Value = dict(key)
+        row = row + 1
+     Next key
+
+    '----------------------------------------------------------
+    ' Format the summary
+    '----------------------------------------------------------
+    With targetWs.Range( _
+            targetWs.Cells(summaryRow + 1, manualReviewCol), _
+            targetWs.Cells(row, manualReviewCol))
+        .HorizontalAlignment = xlLeft
+        .VerticalAlignment = xlCenter
+        .WrapText = True
+    End With
+    With targetWs.Range( _
+            targetWs.Cells(summaryRow + 1, manualReviewCol + 1), _
+            targetWs.Cells(row, manualReviewCol + 1))
+        .HorizontalAlignment = xlRight
+        .VerticalAlignment = xlCenter
+        .WrapText = True
+    End With
+
+    ' Make the count row numeric
+    targetWs.Range( _
+        targetWs.Cells(summaryRow + 1, manualReviewCol + 1), _
+        targetWs.Cells(row - 1, manualReviewCol + 1)).NumberFormat = "0"
+
+    ' AutoFit the summary rows
+    targetWs.Rows(summaryRow & ":" & summaryRow + 1).AutoFit
+
+End Sub
+
+
 '
 ' Description: Fill financial data contents to '可比較公司財務資料' worksheet
 ' Code Date: 2026/8/12
@@ -801,16 +1037,13 @@ End Sub
 Private Sub populateComparableFinancialData( _
     ByVal anchorWs As Worksheet, _
     ByVal targetWs As Worksheet)
-    Dim lastRow             As Long
-    Dim lastCol             As Long
-    Dim dataRange           As Range
-    Dim deleteRange         As Range
-    Dim idxRange, cell      As Range
-    Dim sortKey             As Range
-    Dim lyCol               As Long
-    Dim llyCol              As Long
-    Dim companyProperCol    As Long
-    Dim removedColumns      As Long
+    Dim lastRow, lastCol            As Long
+    Dim dataRange, deleteRange      As Range
+    Dim idxRange, cell, sortKey     As Range
+    Dim lyCol                       As Long
+    Dim llyCol                      As Long
+    Dim companyProperCol            As Long
+    Dim removedColumns              As Long
     '----------------------------------------------------------
     ' 1. Copy the content of the anchor worksheet
     '----------------------------------------------------------
@@ -845,7 +1078,7 @@ Private Sub populateComparableFinancialData( _
     ' 6. Determine the data range
     '----------------------------------------------------------
     lastRow = targetWs.Cells( _
-                    targetWs.Rows.Count, 1).End(xlUp).Row
+                    targetWs.Rows.Count, 1).End(xlUp).row
     lastCol = targetWs.Cells( _
                     4, targetWs.Columns.Count).End(xlToLeft).Column
     Set dataRange = targetWs.Range( _
@@ -881,7 +1114,7 @@ Private Sub populateComparableFinancialData( _
     ' 10. Recalculate the remaining data range
     '----------------------------------------------------------
     lastRow = targetWs.Cells( _
-                    targetWs.Rows.Count, 1).End(xlUp).Row
+                    targetWs.Rows.Count, 1).End(xlUp).row
     lastCol = targetWs.Cells( _
                     4, targetWs.Columns.Count).End(xlToLeft).Column
     Set dataRange = targetWs.Range( _
@@ -916,7 +1149,7 @@ Private Sub populateComparableFinancialData( _
     With targetWs.Sort
         .SortFields.Clear
         .SortFields.Add _
-            Key:=sortKey, _
+            key:=sortKey, _
             SortOn:=xlSortOnValues, _
             Order:=xlAscending, _
             DataOption:=xlSortNormal
@@ -933,7 +1166,7 @@ Private Sub populateComparableFinancialData( _
                     targetWs.Cells(lastRow, 1))
     idxRange.NumberFormat = "@"
     For Each cell In idxRange
-        cell.Value = CStr((cell.Row - 4)) & "."
+        cell.Value = CStr((cell.row - 4)) & "."
         cell.HorizontalAlignment = xlCenter
     Next cell
     '----------------------------------------------------------
@@ -944,25 +1177,6 @@ Private Sub populateComparableFinancialData( _
         companyProperCol, _
         5, _
         lastRow)
-End Sub
-'
-' Description: Remove redundant columns
-' Code Date: 2026/8/12
-'
-Private Sub RemoveColumnsBetweenLYAndLLY(ByVal ws As Worksheet)
-    Dim lyCol As Long
-    Dim llyCol As Long
-
-    lyCol = ws.Range( _
-                Osiris_Review_Constant.CONST_PLI_LY_COLUMN & "1").Column
-    llyCol = ws.Range( _
-                Osiris_Review_Constant.CONST_PLI_LLY_COLUMN & "1").Column
-    If llyCol > lyCol + 1 Then
-        ws.Range( _
-            ws.Columns(lyCol + 1), _
-            ws.Columns(llyCol - 1) _
-        ).Delete
-    End If
 End Sub
 '
 ' Description: Add PLI columns in precentaged format to do quartile calculation
@@ -982,7 +1196,7 @@ Private Sub AddPLIResultColumns(ByVal ws As Worksheet)
     companyCol = ws.Range( _
                     Osiris_Review_Constant.CONST_PLI_COMPANY_PROPER_COLUMN & _
                     "1").Column
-    lastRow = ws.Cells(ws.Rows.Count, 1).End(xlUp).Row
+    lastRow = ws.Cells(ws.Rows.Count, 1).End(xlUp).row
     ' Columns from which the four new percentage columns are derived
     sourceColumns = Array( _
         Osiris_Review_Constant.CONST_PLI_CY_COLUMN, _
@@ -1027,10 +1241,9 @@ Private Sub PopulateComparableQuartile( _
     ByVal firstDataRow As Long, _
     ByVal lastDataRow As Long)
 
-    Dim i As Long
-    Dim resultRow As Long
-    Dim pliRange As Range
-    Dim q As Quartile_Data_Type
+    Dim i, resultRow            As Long
+    Dim pliRange                As Range
+    Dim q                       As Quartile_Data_Type
     '----------------------------------------------------------
     ' Quartile result starts two rows below the last company
     '----------------------------------------------------------
@@ -1082,18 +1295,18 @@ End Sub
 ' Code Date: 2024/8/9
 '
 Private Function find_next_row(currRange As Range, jump_criteria As String, minRow As Variant, maxRow As Variant) As Long
-    Dim nextRow, r As Long
+    Dim nextRow, r      As Long
     Dim comparableState As String
-    Dim ws As Worksheet
+    Dim ws              As Worksheet
         
     Set ws = ActiveSheet
-    nextRow = currRange.Row
+    nextRow = currRange.row
     ' Debug.Print "<Debug> Jump start row number: " & currRange.Row & ";jumpType: " & jump_criteria & "; minRow: " & CStr(minRow) & "; maxRow: " & CStr(maxRow)
     Select Case jump_criteria
     Case Osiris_Review_Constant.CONST_COMPARABLE_STATE_NEXT
-        nextRow = currRange.Row + 1
+        nextRow = currRange.row + 1
     Case Else
-        For r = (currRange.Row + 1) To maxRow
+        For r = (currRange.row + 1) To maxRow
             comparableState = ws.Cells(r, Osiris_Review_Constant.SCREENING_WORKSHEET_STATUS_COLUMN).Value
             If comparableState = jump_criteria Then
                 nextRow = r
@@ -1152,7 +1365,7 @@ Private Sub cbPrev_Click()
     minRow = Osiris_Review_Gadgets.FindMinimumRow(ActiveSheet.Range(Osiris_Review_Constant.SCREENING_WORKSHEET_BASE_RANGE))
     maxRow = Osiris_Review_Gadgets.FindMaximumRow(ActiveSheet.Range(Osiris_Review_Constant.SCREENING_WORKSHEET_BASE_RANGE))
     
-    currRow = ActiveCell.Row
+    currRow = ActiveCell.row
     Debug.Print "Current row: " & currRow
     prevRow = find_previous_row(ActiveCell, cboxJump.Text, minRow, maxRow)
     Debug.Print "<Debug> Previous row goes to : " & prevRow
@@ -1180,13 +1393,13 @@ Private Function find_previous_row(currRange As Range, jump_criteria As String, 
     Dim ws As Worksheet
         
     Set ws = ActiveSheet
-    prevRow = currRange.Row
-    Debug.Print "<Debug> Jump start row number: " & currRange.Row & ";jumpType: " & jump_criteria & "; minRow: " & CStr(minRow) & "; maxRow: " & CStr(maxRow)
+    prevRow = currRange.row
+    Debug.Print "<Debug> Jump start row number: " & currRange.row & ";jumpType: " & jump_criteria & "; minRow: " & CStr(minRow) & "; maxRow: " & CStr(maxRow)
     Select Case jump_criteria
     Case Osiris_Review_Constant.CONST_COMPARABLE_STATE_NEXT
-        prevRow = currRange.Row - 1
+        prevRow = currRange.row - 1
     Case Else
-        For r = (currRange.Row - 1) To minRow Step -1
+        For r = (currRange.row - 1) To minRow Step -1
             comparableState = ws.Cells(r, Osiris_Review_Constant.SCREENING_WORKSHEET_STATUS_COLUMN).Value
             If comparableState = jump_criteria Then
                 prevRow = r
@@ -1212,7 +1425,7 @@ Private Sub cbReload_Click()
     Dim updateScreeningWorksheet            As Boolean
     Dim PLISwitch                           As String
     
-    currentRow = ActiveCell.Row
+    currentRow = ActiveCell.row
     companyName = ActiveSheet.Cells(currentRow, Osiris_Review_Constant.SCREENING_WORKSHEET_COMPANY_NAME_COLUMN).Value
     updateScreeningWorksheet = False
 
